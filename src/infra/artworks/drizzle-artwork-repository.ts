@@ -1,6 +1,10 @@
 import { and, asc, eq, type SQL } from "drizzle-orm";
 import type { Artwork } from "@/core/artworks/artwork";
-import type { ArtworkFilter, ArtworkRepository } from "@/core/artworks/artwork-repository";
+import type {
+  ArtworkFilter,
+  ArtworkPosition,
+  ArtworkRepository,
+} from "@/core/artworks/artwork-repository";
 import type { Db } from "@/db/client";
 import { artworks } from "@/db/schema";
 
@@ -51,6 +55,14 @@ export class DrizzleArtworkRepository implements ArtworkRepository {
       .where(and(...conditions))
       .orderBy(asc(artworks.position), asc(artworks.createdAt));
     return rows.map(toArtwork);
+  }
+
+  async updatePositions(positions: ArtworkPosition[]): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      for (const { id, position } of positions) {
+        await tx.update(artworks).set({ position }).where(eq(artworks.id, id));
+      }
+    });
   }
 
   async delete(id: string): Promise<void> {

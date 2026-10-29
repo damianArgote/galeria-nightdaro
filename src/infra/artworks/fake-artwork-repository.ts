@@ -1,5 +1,9 @@
 import type { Artwork } from "@/core/artworks/artwork";
-import type { ArtworkFilter, ArtworkRepository } from "@/core/artworks/artwork-repository";
+import type {
+  ArtworkFilter,
+  ArtworkPosition,
+  ArtworkRepository,
+} from "@/core/artworks/artwork-repository";
 
 /** In-memory ArtworkRepository for tests. Returns copies so callers cannot mutate stored state. */
 export class FakeArtworkRepository implements ArtworkRepository {
@@ -29,6 +33,13 @@ export class FakeArtworkRepository implements ArtworkRepository {
       .filter((item) => !filter.status || item.status === filter.status)
       .sort((a, b) => a.position - b.position)
       .map(clone);
+  }
+
+  async updatePositions(positions: ArtworkPosition[]): Promise<void> {
+    for (const { id, position } of positions) {
+      const item = this.items.get(id);
+      if (item) item.position = position;
+    }
   }
 
   async delete(id: string): Promise<void> {
