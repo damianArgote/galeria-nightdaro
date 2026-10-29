@@ -1,5 +1,5 @@
 import { pathToFileURL } from "node:url";
-import { hashPassword } from "../infra/auth/password";
+import { Argon2PasswordHasher } from "../infra/auth/argon2-password-hasher";
 import { createDb, type Db } from "./client";
 import { loadLocalEnv, requireEnv } from "./env";
 import { siteSettings, tiers, users } from "./schema";
@@ -19,6 +19,7 @@ const EXAMPLE_TIERS = [
 
 /** Idempotent: running it twice leaves the same rows and never overwrites existing ones. */
 export async function seed(db: Db, admins: SeedAdmin[]): Promise<void> {
+  const hasher = new Argon2PasswordHasher();
   await db
     .insert(siteSettings)
     .values({
@@ -48,7 +49,7 @@ export async function seed(db: Db, admins: SeedAdmin[]): Promise<void> {
       .insert(users)
       .values({
         email: admin.email.toLowerCase(),
-        passwordHash: await hashPassword(admin.password),
+        passwordHash: await hasher.hash(admin.password),
       })
       .onConflictDoNothing();
   }
