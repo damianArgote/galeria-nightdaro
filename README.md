@@ -22,7 +22,7 @@ Galería pública y panel de administración de NightDaro en una sola app Next.j
    cp .env.example .env.local
    ```
 
-   Para el Postgres de Docker: `DATABASE_URL=postgres://nightdaro:nightdaro@localhost:5432/nightdaro`.
+   Para el Postgres de Docker: `DATABASE_URL=postgres://nightdaro:nightdaro@localhost:5433/nightdaro`. El puerto local es 5433 para no chocar con otro Postgres en 5432; se cambia con `POSTGRES_PORT` (por ejemplo `POSTGRES_PORT=5434 docker compose up -d`).
 
 3. Levantar Postgres 16:
 
