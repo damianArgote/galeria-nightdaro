@@ -1,6 +1,6 @@
 import { asc } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { verifyPassword } from "@/infra/auth/password";
+import { Argon2PasswordHasher } from "@/infra/auth/argon2-password-hasher";
 import { createTestDb, databaseUrl } from "../../tests/helpers/test-db";
 import { seed } from "./seed";
 import { siteSettings, tiers, users } from "./schema";
@@ -60,8 +60,8 @@ describe.skipIf(!databaseUrl)("seed", () => {
     for (const user of rows) expect(user.passwordHash).toMatch(/^\$argon2id\$/);
 
     const daro = rows.find((u) => u.email === "daro@example.com")!;
-    expect(await verifyPassword(daro.passwordHash, "daro-secret")).toBe(true);
-    expect(await verifyPassword(daro.passwordHash, "wrong")).toBe(false);
+    expect(await new Argon2PasswordHasher().verify("daro-secret", daro.passwordHash)).toBe(true);
+    expect(await new Argon2PasswordHasher().verify("wrong", daro.passwordHash)).toBe(false);
   });
 
   it("is idempotent", async () => {
