@@ -7,6 +7,17 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # The stack is pinned to Next.js 15 (docs/arquitectura.md); a major upgrade is its own step.
+      - dependency-name: next
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint-config-next
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      # Types must match the Node 22 runtime.
+      - dependency-name: "@types/node"
+        versions: [">=23"]
 
   - package-ecosystem: github-actions
     directory: /
