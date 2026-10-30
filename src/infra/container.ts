@@ -84,6 +84,13 @@ export const container = {
   get createArtwork() {
     return new CreateArtwork(artworks());
   },
+  get rerenderArtworkImage() {
+    return new RerenderArtworkImage({
+      media: mediaAssets(),
+      storage: createStorage(),
+      images: imageProcessor,
+    });
+  },
   get updateArtwork() {
     return new UpdateArtwork(
       artworks(),

@@ -27,9 +27,20 @@ export default async function GalleryPage({
       console.error("Could not sync video status", error);
     });
   }
+  // Images rendered for a milder rating than the artwork's (crossed edits, older uploads) are
+  // never signed; render them again here so the panel heals them.
+  for (const artwork of await container.listArtworkImages.findStale(artworks)) {
+    await container.rerenderArtworkImage
+      .execute(artwork.id, artwork.rating)
+      .catch((error: unknown) => {
+        console.error("Could not re-render a stale image", error);
+      });
+  }
+  // Sign against the ratings as they are now: an edit may have landed while re-rendering.
+  const current = await container.listArtworks.execute({ kind });
   const [images, videoList] = await Promise.all([
-    container.listArtworkImages.execute(ids),
-    container.listArtworkVideos.execute(ids),
+    container.listArtworkImages.execute(current),
+    container.listArtworkVideos.execute(current),
   ]);
   const videos = Object.fromEntries(
     [...videoList.values()].map((v) => [v.artworkId, { status: v.status, playerUrl: v.playerUrl }]),
@@ -76,7 +87,7 @@ export default async function GalleryPage({
             Nueva obra
           </Button>
         </div>
-        <GalleryManager kind={kind} artworks={artworks} thumbs={thumbs} videos={videos} />
+        <GalleryManager kind={kind} artworks={current} thumbs={thumbs} videos={videos} />
       </Panel>
     </>
   );

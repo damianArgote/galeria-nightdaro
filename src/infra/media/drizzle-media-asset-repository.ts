@@ -17,16 +17,21 @@ const columns = {
   height: mediaAssets.height,
   streamVideoId: mediaAssets.streamVideoId,
   status: mediaAssets.status,
+  renderedRating: mediaAssets.renderedRating,
+  createdAt: mediaAssets.createdAt,
 };
 
 export class DrizzleMediaAssetRepository implements MediaAssetRepository {
   constructor(private readonly db: Db) {}
 
   async save(asset: MediaAsset): Promise<void> {
+    // created_at is set by the database and never changes.
+    const row = { ...asset };
+    delete row.createdAt;
     await this.db
       .insert(mediaAssets)
-      .values(asset)
-      .onConflictDoUpdate({ target: mediaAssets.id, set: asset });
+      .values(row)
+      .onConflictDoUpdate({ target: mediaAssets.id, set: row });
   }
 
   async listByArtworkIds(artworkIds: string[]): Promise<MediaAsset[]> {

@@ -58,7 +58,8 @@ describe("BunnyStreamAdapter", () => {
   });
 
   it.each([
-    [0, "processing"],
+    [0, "awaiting_upload"],
+    [1, "processing"],
     [3, "processing"],
     [4, "ready"],
     [5, "failed"],
@@ -72,6 +73,17 @@ describe("BunnyStreamAdapter", () => {
     });
 
     await expect(stream.getStatus("v")).resolves.toBe(expected);
+  });
+
+  it("treats a response without status as processing", async () => {
+    const stream = new BunnyStreamAdapter({
+      libraryId: "1",
+      apiKey: "k",
+      tokenKey: "t",
+      fetch: async () => json({}),
+    });
+
+    await expect(stream.getStatus("v")).resolves.toBe("processing");
   });
 
   it("builds a signed TUS authorization and player URL", () => {

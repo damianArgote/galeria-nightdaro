@@ -4,8 +4,12 @@ import type { MediaAssetRepository } from "@/core/media/ports";
 export class FakeMediaAssetRepository implements MediaAssetRepository {
   readonly items = new Map<string, MediaAsset>();
 
+  /** Stamps createdAt like the database default; override `now` to simulate age. */
+  now = () => new Date();
+
   async save(asset: MediaAsset): Promise<void> {
-    this.items.set(asset.id, { ...asset });
+    const createdAt = this.items.get(asset.id)?.createdAt ?? asset.createdAt ?? this.now();
+    this.items.set(asset.id, { ...asset, createdAt });
   }
 
   async listByArtworkIds(artworkIds: string[]): Promise<MediaAsset[]> {

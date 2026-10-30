@@ -122,6 +122,25 @@ describe("UpdateArtwork", () => {
     expect(updated.position).toBe(1);
   });
 
+  it("rejects making a timelapse explicit, or moving explicit art to timelapses", async () => {
+    const timelapse = await newArtwork("Video", "timelapse");
+    const explicit = await create.execute({ title: "Tinta", kind: "finished", rating: "explicit" });
+    const update = new UpdateArtwork(repo);
+
+    await expect(update.execute({ ...timelapse, rating: "explicit" })).rejects.toThrow(
+      ConflictError,
+    );
+    await expect(update.execute({ ...explicit, kind: "timelapse" })).rejects.toThrow(ConflictError);
+    expect((await repo.findById(timelapse.id))?.rating).toBe("sfw");
+    expect((await repo.findById(explicit.id))?.kind).toBe("finished");
+  });
+
+  it("rejects creating an explicit timelapse", async () => {
+    await expect(
+      create.execute({ title: "Video", kind: "timelapse", rating: "explicit" }),
+    ).rejects.toThrow(ConflictError);
+  });
+
   it("fails for an unknown id", async () => {
     await expect(
       new UpdateArtwork(repo).execute({ id: MISSING_ID, title: "X", kind: "wip", rating: "sfw" }),

@@ -2,6 +2,7 @@ import type { z } from "zod";
 import type { Artwork } from "./artwork";
 import type { ArtworkRepository } from "./artwork-repository";
 import { artworkFieldsSchema } from "./artwork-schemas";
+import { assertRatingAllowed } from "./rating";
 import { uniqueSlug } from "./unique-slug";
 
 export const createArtworkSchema = artworkFieldsSchema;
@@ -16,6 +17,7 @@ export class CreateArtwork {
 
   async execute(input: CreateArtworkInput): Promise<Artwork> {
     const fields = createArtworkSchema.parse(input);
+    assertRatingAllowed(fields.kind, fields.rating);
     const sameKind = await this.artworks.list({ kind: fields.kind });
 
     const artwork: Artwork = {

@@ -57,6 +57,7 @@ export class StartTimelapseUpload {
         height: null,
         streamVideoId: videoId,
         status: "processing",
+        renderedRating: null,
       };
       await media.save(asset);
 

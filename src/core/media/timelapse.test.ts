@@ -48,6 +48,11 @@ describe("StartTimelapseUpload", () => {
     expect(upload).toMatchObject({ videoId: "video-1", expires: NOW.getTime() / 1000 + 6 * 3600 });
   });
 
+  it("rejects an explicit timelapse: videos cannot be censored", async () => {
+    await expect(start.execute({ ...input, rating: "explicit" as "sfw" })).rejects.toThrow();
+    expect(await artworks.list()).toEqual([]);
+  });
+
   it("requires the rating and the adults confirmation", async () => {
     await expect(start.execute({ ...input, charactersAreAdults: false as true })).rejects.toThrow(
       ZodError,
@@ -86,11 +91,9 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
 
     await new SyncVideoStatus(media, video).forArtworks([a.artworkId, b.artworkId, c.artworkId]);
 
-    const videos = await new ListArtworkVideos(media, video, () => NOW).execute([
-      a.artworkId,
-      b.artworkId,
-      c.artworkId,
-    ]);
+    const videos = await new ListArtworkVideos(media, video, () => NOW).execute(
+      [a, b, c].map(({ artworkId }) => ({ id: artworkId, rating: "sfw" as const })),
+    );
     expect(videos.get(a.artworkId)).toEqual({
       artworkId: a.artworkId,
       status: "ready",
@@ -119,6 +122,33 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
     });
   });
 
+  it("marks an upload that never arrived as failed once its authorization expired", async () => {
+    const created = new Date("2026-10-30T06:00:00.000Z");
+    media.now = () => created;
+    const abandoned = await start.execute(input);
+    // The second one starts later, so it is still inside its 6 hour TUS window.
+    media.now = () => NOW;
+    const recent = await start.execute({ ...input, title: "Recién" });
+    const at = (ms: number) => () => new Date(created.getTime() + ms);
+
+    await new SyncVideoStatus(media, video, at(6 * 3600_000 - 1000)).forArtworks([
+      abandoned.artworkId,
+    ]);
+    expect((await media.listByArtworkIds([abandoned.artworkId]))[0]!.status).toBe("processing");
+
+    await new SyncVideoStatus(media, video, at(6 * 3600_000 + 1000)).forArtworks([
+      abandoned.artworkId,
+      recent.artworkId,
+    ]);
+    const statuses = Object.fromEntries(
+      (await media.listByArtworkIds([abandoned.artworkId, recent.artworkId])).map((a) => [
+        a.artworkId,
+        a.status,
+      ]),
+    );
+    expect(statuses).toEqual({ [abandoned.artworkId]: "failed", [recent.artworkId]: "processing" });
+  });
+
   it("syncs one video from the webhook id and ignores unknown ids", async () => {
     const a = await start.execute(input);
     video.statuses.set("video-1", "ready");
@@ -136,7 +166,23 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
     video.statuses.set("video-1", "ready");
     await new SyncVideoStatus(media, video).forArtworks([a.artworkId]);
 
-    const videos = await new ListArtworkVideos(media, null).execute([a.artworkId]);
+    const videos = await new ListArtworkVideos(media, null).execute([
+      { id: a.artworkId, rating: "sfw" },
+    ]);
+
+    expect(videos.get(a.artworkId)).toMatchObject({ status: "ready", playerUrl: null });
+  });
+});
+
+describe("an explicit timelapse created before the rule", () => {
+  it("never gets a signed player URL", async () => {
+    const a = await start.execute(input);
+    video.statuses.set("video-1", "ready");
+    await new SyncVideoStatus(media, video).forArtworks([a.artworkId]);
+
+    const videos = await new ListArtworkVideos(media, video).execute([
+      { id: a.artworkId, rating: "explicit" },
+    ]);
 
     expect(videos.get(a.artworkId)).toMatchObject({ status: "ready", playerUrl: null });
   });

@@ -50,6 +50,7 @@ export function ArtworkForm({
   const {
     register,
     handleSubmit,
+    watch,
     setError,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
@@ -62,6 +63,8 @@ export function ArtworkForm({
       tags: artwork?.tags.join(", ") ?? "",
     },
   });
+
+  const timelapse = watch("kind") === "timelapse";
 
   const submit = handleSubmit(async (values) => {
     setFormError(undefined);
@@ -119,14 +122,22 @@ export function ArtworkForm({
             <label
               key={rating}
               className={cn(
-                "cursor-pointer rounded-md border-[3px] border-border bg-background p-3 has-focus-visible:outline-2",
+                "cursor-pointer rounded-md border-[3px] border-border bg-background p-3 has-focus-visible:outline-2 has-disabled:cursor-not-allowed has-disabled:opacity-50",
                 "has-checked:border-black has-checked:bg-card has-checked:shadow-[4px_4px_0_var(--brand-green)]",
               )}
             >
-              <input type="radio" value={rating} className="sr-only" {...register("rating")} />
+              <input
+                type="radio"
+                value={rating}
+                className="sr-only"
+                disabled={timelapse && rating === "explicit"}
+                {...register("rating")}
+              />
               <b className="block text-sm">{RATING_LABELS[rating].label}</b>
               <span className="text-xs text-muted-foreground">
-                {RATING_LABELS[rating].description}
+                {timelapse && rating === "explicit"
+                  ? "No disponible para timelapses: los videos no se censuran."
+                  : RATING_LABELS[rating].description}
               </span>
             </label>
           ))}

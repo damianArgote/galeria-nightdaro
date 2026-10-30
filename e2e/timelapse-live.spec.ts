@@ -60,7 +60,7 @@ test.describe("timelapse against Bunny Stream", () => {
       .filter({ has: page.getByRole("radio", { name: "Timelapse" }) })
       .click();
     await page
-      .getByLabel("Video")
+      .getByLabel("Video", { exact: true })
       .setInputFiles({ name: "prueba.webm", mimeType: "video/webm", buffer: video });
     await page.getByLabel("Título").fill(title);
     await page.getByText("Apto para todos", { exact: true }).click();

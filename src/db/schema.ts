@@ -73,6 +73,7 @@ export const mediaAssets = pgTable(
     height: integer("height"),
     streamVideoId: text("stream_video_id"),
     status: mediaStatus("status").notNull().default("processing"),
+    renderedRating: artworkRating("rendered_rating"),
     createdAt: createdAt(),
   },
   (t) => [index("media_assets_artwork_id_idx").on(t.artworkId)],

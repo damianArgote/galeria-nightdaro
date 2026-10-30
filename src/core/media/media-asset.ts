@@ -1,3 +1,5 @@
+import type { ArtworkRating } from "../artworks/artwork";
+
 export const MEDIA_TYPES = ["image", "video"] as const;
 export const MEDIA_STATUSES = ["processing", "ready", "failed"] as const;
 
@@ -21,6 +23,10 @@ export interface MediaAsset {
   height: number | null;
   streamVideoId: string | null;
   status: MediaStatus;
+  /** Rating the public variants were rendered for; null for videos. */
+  renderedRating: ArtworkRating | null;
+  /** Set by the repository when the row is created. */
+  createdAt?: Date;
 }
 
 /** What a page may receive about an image: signed public URLs, never storage keys. */

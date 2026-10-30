@@ -48,6 +48,7 @@ export class RerenderArtworkImage {
         thumbKey,
         previewKey,
         blurData: variants.placeholder,
+        renderedRating: rating,
       };
       await media.save(updated);
     } catch (error) {

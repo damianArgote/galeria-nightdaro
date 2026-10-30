@@ -14,7 +14,7 @@ test.describe("timelapses without Bunny Stream configured", () => {
       .locator("label")
       .filter({ has: page.getByRole("radio", { name: "Timelapse" }) })
       .click();
-    await page.getByLabel("Video").setInputFiles({
+    await page.getByLabel("Video", { exact: true }).setInputFiles({
       name: "proceso.mp4",
       mimeType: "video/mp4",
       buffer: Buffer.from("not really a video"),
@@ -34,5 +34,25 @@ test.describe("timelapses without Bunny Stream configured", () => {
       data: { VideoGuid: "x", Status: 3 },
     });
     expect(response.status()).toBe(404);
+  });
+});
+
+test.describe("timelapse rating", () => {
+  test.use({ storageState: ADMIN_STATE });
+
+  test("explicit is not available for timelapses", async ({ page }) => {
+    await page.goto("/admin/subir");
+    const explicit = page.getByRole("radio", { name: /^Explícito/ });
+    await page.getByText("Explícito", { exact: true }).click();
+    await expect(explicit).toBeChecked();
+
+    await page
+      .locator("label")
+      .filter({ has: page.getByRole("radio", { name: "Timelapse" }) })
+      .click();
+
+    await expect(explicit).toBeDisabled();
+    await expect(explicit).not.toBeChecked();
+    await expect(page.getByText("No disponible para timelapses")).toBeVisible();
   });
 });

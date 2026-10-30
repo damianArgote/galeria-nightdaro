@@ -7,6 +7,7 @@ const PLAYER = "https://iframe.mediadelivery.net/embed";
 
 /** Bunny Stream `status`: 0 created … 3 transcoding, 4 finished, 5 error, 6 upload failed. */
 function toVideoStatus(status: number): VideoStatus {
+  if (status === 0) return "awaiting_upload";
   if (status === 4) return "ready";
   if (status === 5 || status === 6) return "failed";
   return "processing";
@@ -69,7 +70,8 @@ export class BunnyStreamAdapter implements VideoPort {
     if (response.status === 404) return "failed";
     if (!response.ok) throw new Error(`Bunny Stream get video failed with ${response.status}`);
     const body = (await response.json()) as { status?: number };
-    return toVideoStatus(body.status ?? 0);
+    // Without a status we cannot tell "never uploaded" apart; keep waiting.
+    return typeof body.status === "number" ? toVideoStatus(body.status) : "processing";
   }
 
   playerUrl(videoId: string, expiresAt: Date): string {
