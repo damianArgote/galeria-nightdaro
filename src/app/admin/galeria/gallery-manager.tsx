@@ -32,7 +32,20 @@ import {
   updateArtworkAction,
 } from "./actions";
 
-export function GalleryManager({ kind, artworks }: { kind: ArtworkKind; artworks: Artwork[] }) {
+export interface Thumb {
+  url: string;
+  blurData: string | null;
+}
+
+export function GalleryManager({
+  kind,
+  artworks,
+  thumbs,
+}: {
+  kind: ArtworkKind;
+  artworks: Artwork[];
+  thumbs: Record<string, Thumb>;
+}) {
   const [items, setItems] = useState(artworks);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
@@ -83,7 +96,12 @@ export function GalleryManager({ kind, artworks }: { kind: ArtworkKind; artworks
         <SortableContext items={items.map((a) => a.id)} strategy={verticalListSortingStrategy}>
           <ul className="grid gap-2.5" aria-label="Obras en orden de la galería">
             {items.map((artwork, index) => (
-              <ArtworkRow key={artwork.id} artwork={artwork} position={index + 1} />
+              <ArtworkRow
+                key={artwork.id}
+                artwork={artwork}
+                position={index + 1}
+                thumb={thumbs[artwork.id]}
+              />
             ))}
           </ul>
         </SortableContext>
@@ -92,7 +110,15 @@ export function GalleryManager({ kind, artworks }: { kind: ArtworkKind; artworks
   );
 }
 
-function ArtworkRow({ artwork, position }: { artwork: Artwork; position: number }) {
+function ArtworkRow({
+  artwork,
+  position,
+  thumb,
+}: {
+  artwork: Artwork;
+  position: number;
+  thumb?: Thumb;
+}) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
@@ -132,10 +158,23 @@ function ArtworkRow({ artwork, position }: { artwork: Artwork; position: number 
       <div
         aria-hidden
         className={cn(
-          "h-[70px] w-14 rounded-xs border-2 border-black bg-[radial-gradient(60%_45%_at_40%_40%,var(--brand-violet),transparent_70%),radial-gradient(50%_40%_at_60%_80%,var(--brand-sky),transparent_70%),linear-gradient(160deg,var(--card),var(--background))]",
+          "h-[70px] w-14 overflow-hidden rounded-xs border-2 border-black bg-[radial-gradient(60%_45%_at_40%_40%,var(--brand-violet),transparent_70%),radial-gradient(50%_40%_at_60%_80%,var(--brand-sky),transparent_70%),linear-gradient(160deg,var(--card),var(--background))] bg-cover bg-center",
           hidden && "opacity-45",
         )}
-      />
+        style={thumb?.blurData ? { backgroundImage: `url(${thumb.blurData})` } : undefined}
+      >
+        {thumb && (
+          // eslint-disable-next-line @next/next/no-img-element -- signed CDN URL, already resized
+          <img
+            src={thumb.url}
+            alt=""
+            draggable={false}
+            loading="lazy"
+            className="size-full object-cover"
+            data-testid="artwork-thumb"
+          />
+        )}
+      </div>
       <div className={cn("min-w-0", hidden && "opacity-60")}>
         <b className="block truncate">{artwork.title}</b>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
