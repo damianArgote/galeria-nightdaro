@@ -24,7 +24,10 @@ export class ReorderGallery {
       received.size === expected.size &&
       ids.every((id) => expected.has(id));
     if (!sameSet) {
-      throw new ConflictError("The gallery changed; reload and try again.", "ids");
+      throw new ConflictError(
+        "La galería cambió mientras ordenabas. Recargá la página y probá de nuevo.",
+        "ids",
+      );
     }
 
     await this.artworks.updatePositions(ids.map((id, position) => ({ id, position })));
