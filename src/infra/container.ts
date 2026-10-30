@@ -16,6 +16,7 @@ import { ListTrackingLinks } from "@/core/links/list-tracking-links";
 import { UpdateTier } from "@/core/links/update-tier";
 import { UpdateTrackingLink } from "@/core/links/update-tracking-link";
 import { ListArtworkImages } from "@/core/media/list-artwork-images";
+import { RerenderArtworkImage } from "@/core/media/rerender-artwork-image";
 import { UploadArtworkImage } from "@/core/media/upload-artwork-image";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
@@ -70,7 +71,14 @@ export const container = {
     return new CreateArtwork(artworks());
   },
   get updateArtwork() {
-    return new UpdateArtwork(artworks());
+    return new UpdateArtwork(
+      artworks(),
+      new RerenderArtworkImage({
+        media: mediaAssets(),
+        storage: createStorage(),
+        images: imageProcessor,
+      }),
+    );
   },
   get publishArtwork() {
     return new PublishArtwork(artworks());
@@ -79,7 +87,7 @@ export const container = {
     return new HideArtwork(artworks());
   },
   get deleteArtwork() {
-    return new DeleteArtwork(artworks());
+    return new DeleteArtwork(artworks(), { media: mediaAssets(), storage: createStorage() });
   },
   get reorderGallery() {
     return new ReorderGallery(artworks());

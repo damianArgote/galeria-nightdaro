@@ -55,3 +55,13 @@ export const EXE_RENAMED_AS_JPG = new Uint8Array([
   0x00,
   ...new Array(48).fill(0),
 ]);
+
+/** Wide black/white stripes: detail that survives resizing but not a strong blur. */
+export async function stripedImage(width = 1200, height = 800): Promise<Uint8Array> {
+  const stripes = Array.from(
+    { length: Math.ceil(width / 200) },
+    (_, i) => `<rect x="${i * 200}" width="100" height="${height}" fill="#fff"/>`,
+  ).join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#000"/>${stripes}</svg>`;
+  return new Uint8Array(await sharp(Buffer.from(svg)).jpeg().toBuffer());
+}

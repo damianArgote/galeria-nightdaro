@@ -10,6 +10,7 @@ import {
   type StoragePort,
   type StorageZone,
 } from "./ports";
+import { assetFiles, deleteFiles } from "./asset-files";
 import { publicSourceStrategyFor } from "./public-source-strategy";
 
 export const MAX_IMAGE_BYTES = 30 * 1024 * 1024;
@@ -111,11 +112,16 @@ export class UploadArtworkImage {
       };
       const previous = await media.listByArtworkIds([artworkId]);
       await media.save(asset);
-      await Promise.all(previous.filter((p) => p.type === "image").map((p) => this.remove(p)));
+      // From here the new files belong to a saved row: a failure must not delete them.
+      written.length = 0;
+      for (const old of previous.filter((p) => p.type === "image")) {
+        await media.delete(old.id);
+        await deleteFiles(storage, assetFiles(old));
+      }
 
       return { id, width: asset.width, height: asset.height };
     } catch (error) {
-      await Promise.allSettled(written.map(({ zone, key }) => storage.delete(zone, key)));
+      await deleteFiles(storage, written);
       throw error;
     }
   }
@@ -130,19 +136,5 @@ export class UploadArtworkImage {
       throw new InvalidInputError("Solo se aceptan imágenes JPG, PNG o WebP", field);
     }
     return format;
-  }
-
-  private async remove(asset: MediaAsset) {
-    const { storage, media } = this.deps;
-    await media.delete(asset.id);
-    const keys: [StorageZone, string | null][] = [
-      ["originals", asset.originalKey],
-      ["originals", asset.censoredKey],
-      ["public", asset.thumbKey],
-      ["public", asset.previewKey],
-    ];
-    await Promise.allSettled(
-      keys.filter(([, key]) => key).map(([zone, key]) => storage.delete(zone, key!)),
-    );
   }
 }

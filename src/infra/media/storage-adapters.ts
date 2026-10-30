@@ -23,11 +23,10 @@ export class LocalStorageAdapter implements StoragePort {
     await rm(this.pathFor(zone, key), { force: true });
   }
 
-  /** Only the dev media route reads, and only from the public zone. */
-  async read(zone: StorageZone, key: string): Promise<Buffer | null> {
+  async get(zone: StorageZone, key: string): Promise<Uint8Array | null> {
     const path = this.pathFor(zone, key);
     try {
-      return await readFile(path);
+      return new Uint8Array(await readFile(path));
     } catch {
       return null;
     }
@@ -68,6 +67,15 @@ export class BunnyStorageAdapter implements StoragePort {
     if (response.status !== 201) {
       throw new Error(`Bunny Storage PUT ${zone}/${key} failed with ${response.status}`);
     }
+  }
+
+  async get(zone: StorageZone, key: string): Promise<Uint8Array | null> {
+    const response = await this.request("GET", zone, key);
+    if (response.status === 404) return null;
+    if (!response.ok) {
+      throw new Error(`Bunny Storage GET ${zone}/${key} failed with ${response.status}`);
+    }
+    return new Uint8Array(await response.arrayBuffer());
   }
 
   async delete(zone: StorageZone, key: string) {
