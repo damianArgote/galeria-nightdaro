@@ -28,9 +28,9 @@ export function verifyStreamWebhook(
   signature: string | null,
   readOnlyKey: string,
 ) {
-  if (!signature || !/^[0-9a-f]{64}$/.test(signature)) return false;
+  if (!signature || !/^[0-9a-f]{64}$/i.test(signature)) return false;
   const expected = createHmac("sha256", readOnlyKey).update(rawBody).digest();
-  return timingSafeEqual(expected, Buffer.from(signature, "hex"));
+  return timingSafeEqual(expected, Buffer.from(signature.toLowerCase(), "hex"));
 }
 
 export class BunnyStreamAdapter implements VideoPort {

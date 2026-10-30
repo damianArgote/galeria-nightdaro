@@ -10,12 +10,17 @@ export class SyncVideoStatus {
     private readonly video: VideoPort,
   ) {}
 
+  /** One failed lookup does not stop the others; it stays processing until the next sync. */
   async forArtworks(artworkIds: string[]): Promise<void> {
     const assets = await this.media.listByArtworkIds(artworkIds);
     for (const asset of assets) {
       if (asset.type !== "video" || asset.status !== "processing" || !asset.streamVideoId) continue;
-      const status = await this.video.getStatus(asset.streamVideoId);
-      if (status !== "processing") await this.media.save({ ...asset, status });
+      try {
+        const status = await this.video.getStatus(asset.streamVideoId);
+        if (status !== "processing") await this.media.save({ ...asset, status });
+      } catch {
+        continue;
+      }
     }
   }
 

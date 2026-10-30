@@ -41,8 +41,9 @@ export class StartTimelapseUpload {
     const { artworks, media, video } = this.deps;
 
     const artwork = await new CreateArtwork(artworks).execute({ ...fields, kind: "timelapse" });
+    let videoId: string | undefined;
     try {
-      const { videoId } = await video.createVideo(artwork.title);
+      ({ videoId } = await video.createVideo(artwork.title));
       const asset: MediaAsset = {
         id: this.deps.newId?.() ?? crypto.randomUUID(),
         artworkId: artwork.id,
@@ -64,6 +65,7 @@ export class StartTimelapseUpload {
       return { artworkId: artwork.id, upload };
     } catch (error) {
       await artworks.delete(artwork.id);
+      if (videoId) await video.deleteVideo(videoId).catch(() => {});
       throw error;
     }
   }

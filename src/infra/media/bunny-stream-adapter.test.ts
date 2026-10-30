@@ -25,6 +25,7 @@ describe("Bunny Stream signatures", () => {
     const signature = "be6a2887865169e358c13acb482aa8dd525e2a4b609f54413e459d0879fcbfa0";
 
     expect(verifyStreamWebhook(body, signature, "readonly-key")).toBe(true);
+    expect(verifyStreamWebhook(body, signature.toUpperCase(), "readonly-key")).toBe(true);
     expect(verifyStreamWebhook(body.replace("3}", "4}"), signature, "readonly-key")).toBe(false);
     expect(verifyStreamWebhook(body, signature, "other-key")).toBe(false);
     expect(verifyStreamWebhook(body, null, "readonly-key")).toBe(false);

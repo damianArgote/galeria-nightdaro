@@ -72,14 +72,14 @@ export function createUrlSigner(): SignedUrlService {
   });
 }
 
-/** Bunny Stream, or null when the library is not configured (uploads then explain why). */
+/**
+ * Bunny Stream, or null until the library, its API key and its embed token key are all set
+ * (uploads then explain what is missing; the rest of the panel keeps working).
+ */
 export function createVideoPort(): VideoPort | null {
   const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID;
   const apiKey = process.env.BUNNY_STREAM_API_KEY;
-  if (!libraryId || !apiKey) return null;
-  return new BunnyStreamAdapter({
-    libraryId,
-    apiKey,
-    tokenKey: requireEnv("BUNNY_STREAM_TOKEN_KEY"),
-  });
+  const tokenKey = process.env.BUNNY_STREAM_TOKEN_KEY;
+  if (!libraryId || !apiKey || !tokenKey) return null;
+  return new BunnyStreamAdapter({ libraryId, apiKey, tokenKey });
 }

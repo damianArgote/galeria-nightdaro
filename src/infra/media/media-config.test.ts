@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { storageDriver, tokenKey } from "./media-config";
+import { createVideoPort, storageDriver, tokenKey } from "./media-config";
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -31,5 +31,16 @@ describe("storage configuration", () => {
     vi.stubEnv("STORAGE_DRIVER", "s3");
 
     expect(() => storageDriver()).toThrow('STORAGE_DRIVER must be "local" or "bunny"');
+  });
+
+  it("treats Bunny Stream as not configured until all three keys are set", () => {
+    vi.stubEnv("BUNNY_STREAM_LIBRARY_ID", "12345");
+    vi.stubEnv("BUNNY_STREAM_API_KEY", "key");
+    vi.stubEnv("BUNNY_STREAM_TOKEN_KEY", "");
+
+    expect(createVideoPort()).toBeNull();
+
+    vi.stubEnv("BUNNY_STREAM_TOKEN_KEY", "token");
+    expect(createVideoPort()).not.toBeNull();
   });
 });

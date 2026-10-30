@@ -58,6 +58,16 @@ describe("StartTimelapseUpload", () => {
     expect(await artworks.list()).toEqual([]);
   });
 
+  it("removes the draft and the video when saving the asset fails", async () => {
+    media.save = async () => {
+      throw new Error("db down");
+    };
+
+    await expect(start.execute(input)).rejects.toThrow("db down");
+    expect(await artworks.list()).toEqual([]);
+    expect(video.deleted).toEqual(["video-1"]);
+  });
+
   it("removes the draft when the video service fails", async () => {
     video.failCreate = true;
 
@@ -88,6 +98,25 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
     });
     expect(videos.get(b.artworkId)).toMatchObject({ status: "failed", playerUrl: null });
     expect(videos.get(c.artworkId)).toMatchObject({ status: "processing", playerUrl: null });
+  });
+
+  it("keeps syncing the other videos when one status lookup fails", async () => {
+    const a = await start.execute(input);
+    const b = await start.execute({ ...input, title: "Otro" });
+    video.statuses.set("video-2", "ready");
+    const getStatus = video.getStatus.bind(video);
+    video.getStatus = async (id) => {
+      if (id === "video-1") throw new Error("api down");
+      return getStatus(id);
+    };
+
+    await new SyncVideoStatus(media, video).forArtworks([a.artworkId, b.artworkId]);
+
+    const assets = await media.listByArtworkIds([a.artworkId, b.artworkId]);
+    expect(Object.fromEntries(assets.map((x) => [x.streamVideoId, x.status]))).toEqual({
+      "video-1": "processing",
+      "video-2": "ready",
+    });
   });
 
   it("syncs one video from the webhook id and ignores unknown ids", async () => {
