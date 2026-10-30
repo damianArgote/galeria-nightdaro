@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import { seed } from "@/db/seed";
+import { seedDemo } from "@/db/seed-demo";
 import { createTestDb } from "../tests/helpers/test-db";
 import { adminCredentials } from "./helpers";
 
@@ -10,6 +11,7 @@ export default async function globalSetup() {
   try {
     await testDb.reset();
     await seed(testDb.db, [adminCredentials()]);
+    await seedDemo(testDb.db, ".storage/e2e");
   } finally {
     await testDb.close();
   }

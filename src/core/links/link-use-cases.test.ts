@@ -65,6 +65,27 @@ describe("tiers", () => {
     ).resolves.toMatchObject({ priceCents: 800 });
   });
 
+  it("creates a tracking link with each tier and follows URL changes", async () => {
+    const tier = await new CreateTier(tiers, links).execute(tierInput);
+
+    const [link] = await links.list();
+    expect(link).toMatchObject({
+      label: "Patreon · Tinta",
+      targetUrl: tierInput.url,
+      tierId: tier.id,
+    });
+    expect(link!.code).toMatch(/^[a-z0-9]{6}$/);
+
+    await new UpdateTier(tiers, links).execute({
+      ...tierInput,
+      id: tier.id,
+      url: "https://www.patreon.com/nightdaro/membership",
+    });
+    expect((await links.findById(link!.id))?.targetUrl).toBe(
+      "https://www.patreon.com/nightdaro/membership",
+    );
+  });
+
   it("rejects invalid input and unknown ids", async () => {
     await expect(
       new CreateTier(tiers).execute({ ...tierInput, url: "http://insecure.example" }),

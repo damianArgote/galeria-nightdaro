@@ -1,4 +1,4 @@
-import { and, asc, eq, type SQL } from "drizzle-orm";
+import { and, asc, eq, inArray, type SQL } from "drizzle-orm";
 import type { Artwork } from "@/core/artworks/artwork";
 import type {
   ArtworkFilter,
@@ -49,6 +49,8 @@ export class DrizzleArtworkRepository implements ArtworkRepository {
     const conditions: SQL[] = [];
     if (filter.kind) conditions.push(eq(artworks.kind, filter.kind));
     if (filter.status) conditions.push(eq(artworks.status, filter.status));
+    if (filter.ratings) conditions.push(inArray(artworks.rating, filter.ratings));
+    if (filter.slug) conditions.push(eq(artworks.slug, filter.slug));
     const rows = await this.db
       .select()
       .from(artworks)

@@ -5,6 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-display: var(--font-dela), "Arial Black", Impact, sans-serif;
+  --font-jp: var(--font-zen), var(--font-geist-sans), system-ui, sans-serif;
+  --font-brush: var(--font-yuji), "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-label: var(--font-jbm), ui-monospace, monospace;
+  --color-brand-hanko: #ff4fd8;
+  --color-paper: #f3eee6;
   --color-brand-violet: var(--brand-violet);
   --color-brand-sky: var(--brand-sky);
   --color-brand-green: var(--brand-green);
@@ -102,5 +108,38 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  /* Main call to action of the public gallery: violet to sky neon pill. */
+  .gallery-cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    color: #0a0420;
+    background: linear-gradient(95deg, var(--brand-violet), var(--brand-sky));
+    box-shadow:
+      0 0 0 3px color-mix(in oklch, var(--brand-violet) 25%, transparent),
+      0 0 26px -4px var(--brand-violet),
+      0 0 34px -10px var(--brand-sky);
+    transition: transform 0.15s;
+  }
+  .gallery-cta:hover {
+    transform: translateY(-2px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gallery-cta:hover {
+      transform: none;
+    }
+  }
+}
+
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
   }
 }

@@ -86,6 +86,16 @@ export function describeArtworkRepositoryContract(
       ).toEqual([first.id, third.id]);
     });
 
+    it("filters by ratings and slug", async () => {
+      const sfw = buildArtwork({ rating: "sfw", slug: "a" });
+      const explicit = buildArtwork({ rating: "explicit", slug: "b" });
+      for (const artwork of [sfw, explicit]) await repository.save(artwork);
+
+      expect((await repository.list({ ratings: ["sfw"] })).map((a) => a.id)).toEqual([sfw.id]);
+      expect((await repository.list({ ratings: [] })).map((a) => a.id)).toEqual([]);
+      expect((await repository.list({ slug: "b" })).map((a) => a.id)).toEqual([explicit.id]);
+    });
+
     it("updates positions so the list follows the new order", async () => {
       const a = buildArtwork({ position: 0 });
       const b = buildArtwork({ position: 1 });

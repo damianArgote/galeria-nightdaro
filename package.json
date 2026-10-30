@@ -15,7 +15,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/seed-cli.ts",
     "db:studio": "drizzle-kit studio",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "db:seed:demo": "tsx src/db/seed-demo-cli.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

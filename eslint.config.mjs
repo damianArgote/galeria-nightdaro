@@ -14,6 +14,15 @@ const eslintConfig = [
   ...compat.extends("next/core-web-vitals", "next/typescript"),
   prettier,
   {
+    rules: {
+      // `_name` marks a value that is destructured only to leave it out.
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", ignoreRestSiblings: true },
+      ],
+    },
+  },
+  {
     // src/core is framework-free: no Next.js, React or Drizzle.
     files: ["src/core/**/*.{ts,tsx}"],
     rules: {
