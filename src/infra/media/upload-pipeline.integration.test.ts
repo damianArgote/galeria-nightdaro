@@ -116,6 +116,24 @@ describe("image upload pipeline", () => {
     expect(stats.channels[0]!.stdev).toBeGreaterThan(2);
   });
 
+  it.each([
+    [300, 300],
+    [1000, 200],
+    [200, 1000],
+  ])("accepts an image smaller than the watermark tile (%ix%i)", async (width, height) => {
+    const { id } = await artwork();
+
+    await upload.execute({
+      artworkId: id,
+      image: await pngImage(width, height),
+      charactersAreAdults: true,
+    });
+
+    const [asset] = await media.listByArtworkIds([id]);
+    const preview = await readFile(join(root, "public", asset!.previewKey!));
+    expect(await sharp(preview).metadata()).toMatchObject({ width, height });
+  });
+
   it("blurs explicit art when there is no censored version", async () => {
     const { id } = await artwork("explicit");
 

@@ -56,6 +56,7 @@ export class SharpImageProcessor implements ImageProcessor {
       .resize(PREVIEW_SIZE, PREVIEW_SIZE, { fit: "inside", withoutEnlargement: true })
       .toBuffer();
     if (blur) base = await this.strongBlur(base);
+    const { width = PREVIEW_SIZE, height = PREVIEW_SIZE } = await sharp(base).metadata();
 
     const [thumb, preview, placeholder] = await Promise.all([
       sharp(base)
@@ -63,7 +64,7 @@ export class SharpImageProcessor implements ImageProcessor {
         .webp({ quality: 80 })
         .toBuffer(),
       sharp(base)
-        .composite([{ input: await this.watermarkTile(), tile: true, blend: "over" }])
+        .composite([{ input: await this.watermarkTile(width, height), tile: true, blend: "over" }])
         .webp({ quality: 75 })
         .toBuffer(),
       sharp(base)
@@ -93,8 +94,19 @@ export class SharpImageProcessor implements ImageProcessor {
       .toBuffer();
   }
 
-  private watermarkTile(): Promise<Buffer> {
+  /** sharp refuses an overlay larger than the base, so small images get a cropped tile. */
+  private async watermarkTile(width: number, height: number): Promise<Buffer> {
     this.watermark ??= readFile(WATERMARK_TILE);
-    return this.watermark;
+    const tile = await this.watermark;
+    const { width: tileWidth = 0, height: tileHeight = 0 } = await sharp(tile).metadata();
+    if (width >= tileWidth && height >= tileHeight) return tile;
+    return sharp(tile)
+      .extract({
+        left: 0,
+        top: 0,
+        width: Math.min(width, tileWidth),
+        height: Math.min(height, tileHeight),
+      })
+      .toBuffer();
   }
 }

@@ -102,12 +102,12 @@ Cada Server Action del panel llama primero a `requireAdmin()`, valida con el esq
 
 Las claves empiezan con `nightdaro/`. Las páginas reciben solo URLs firmadas de la zona pública, que vencen en 1 hora (Bunny Token Authentication, HMAC-SHA256); nunca una clave del original.
 
-| Variable                                    | Uso                                                                                                                                                                            |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `STORAGE_DRIVER`                            | `local` (por defecto) guarda en `LOCAL_STORAGE_DIR` (`.storage`) y sirve la zona pública en `/dev-media`, verificando el mismo token; `bunny` usa Bunny Storage y la Pull Zone |
-| `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC` | Nombres de las dos storage zones                                                                                                                                               |
-| `BUNNY_STORAGE_KEY`                         | Contraseña de las zonas; si son distintas, `BUNNY_STORAGE_KEY_ORIGINALS` y `BUNNY_STORAGE_KEY_PUBLIC`                                                                          |
-| `BUNNY_STORAGE_HOST`                        | Endpoint de la región (por defecto `storage.bunnycdn.com`)                                                                                                                     |
-| `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`         | Host de la Pull Zone de `public` y su clave de Token Authentication                                                                                                            |
+| Variable                                    | Uso                                                                                                                                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STORAGE_DRIVER`                            | Obligatoria en producción. `local` (por defecto en desarrollo) guarda en `LOCAL_STORAGE_DIR` (`.storage`) y sirve la zona pública en `/dev-media`, verificando el mismo token; `bunny` usa Bunny Storage y la Pull Zone |
+| `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC` | Nombres de las dos storage zones                                                                                                                                                                                        |
+| `BUNNY_STORAGE_KEY`                         | Contraseña de las zonas; si son distintas, `BUNNY_STORAGE_KEY_ORIGINALS` y `BUNNY_STORAGE_KEY_PUBLIC`                                                                                                                   |
+| `BUNNY_STORAGE_HOST`                        | Endpoint de la región (por defecto `storage.bunnycdn.com`)                                                                                                                                                              |
+| `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`         | Host de la Pull Zone de `public` y su clave de Token Authentication                                                                                                                                                     |
 
 La marca de agua es `src/infra/media/assets/watermark-tile.png`, generada con `node scripts/build-watermark.mjs` para que el servidor no dependa de fuentes instaladas.

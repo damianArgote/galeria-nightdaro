@@ -62,7 +62,10 @@ export const POST = adminRoute(async (request) => {
       charactersAreAdults: true,
     });
   } catch (error) {
-    await container.deleteArtwork.execute({ id: artwork.id });
+    // Undo the draft, but never let a cleanup failure hide the upload error.
+    await container.deleteArtwork.execute({ id: artwork.id }).catch((cleanupError: unknown) => {
+      console.error("Could not delete the draft after a failed upload", cleanupError);
+    });
     if (error instanceof InvalidInputError) {
       return fail(400, error.message, error.field ? { [error.field]: [error.message] } : undefined);
     }

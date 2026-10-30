@@ -9,9 +9,17 @@ const LOCAL_TOKEN_KEY = "local-dev-token-key";
 
 export type StorageDriver = "local" | "bunny";
 
-/** `bunny` in production; `local` (files under LOCAL_STORAGE_DIR) for development and tests. */
+/**
+ * `bunny` in production; `local` (files under LOCAL_STORAGE_DIR) for development and tests.
+ * A production server must choose explicitly, so it never falls back to local storage and the
+ * well-known local token key by accident.
+ */
 export function storageDriver(): StorageDriver {
-  const driver = process.env.STORAGE_DRIVER || "local";
+  const configured = process.env.STORAGE_DRIVER;
+  if (!configured && process.env.NODE_ENV === "production") {
+    throw new Error('STORAGE_DRIVER must be set in production ("bunny", or "local" for tests)');
+  }
+  const driver = configured || "local";
   if (driver !== "local" && driver !== "bunny") {
     throw new Error(`STORAGE_DRIVER must be "local" or "bunny", got "${driver}"`);
   }
