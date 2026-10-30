@@ -100,7 +100,7 @@ Cada Server Action del panel llama primero a `requireAdmin()`, valida con el esq
 3. Genera con sharp la miniatura de 400 px, la preview de 1600 px WebP q75 con marca de agua en mosaico y un placeholder de 20 px, y los guarda en la zona `public`.
 4. Si la obra es `explicit`, las variantes públicas salen de la versión censurada que suba Daro o, si no hay, de un desenfoque fuerte.
 
-Las claves empiezan con `nightdaro/`. Las páginas reciben solo URLs firmadas de la zona pública, que vencen en 1 hora (Bunny Token Authentication, HMAC-SHA256); nunca una clave del original.
+Las claves empiezan con `nightdaro/`. Cada imagen guarda el rating para el que se generaron sus variantes (`rendered_rating`). Si la obra tiene ahora un rating más estricto, por ejemplo por dos ediciones cruzadas, esa imagen no se firma, y la Galería del panel la vuelve a generar desde el original. Las páginas reciben solo URLs firmadas de la zona pública, que vencen en 1 hora (Bunny Token Authentication, HMAC-SHA256); nunca una clave del original.
 
 | Variable                                    | Uso                                                                                                                                                                                                                     |
 | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -116,7 +116,9 @@ La marca de agua es `src/infra/media/assets/watermark-tile.png`, generada con `n
 
 En `/admin/subir`, con el tipo **Timelapse**, el panel llama a `startTimelapseUploadAction`. Esa acción crea el borrador y el video vacío en Bunny Stream, y devuelve una firma TUS que sirve solo para ese video y dura 6 horas (`sha256(library_id + api_key + expiración + video_id)`). El navegador sube el archivo directo a Bunny con `tus-js-client`, así que el video nunca pasa por el servidor.
 
-El video queda en **Procesando** hasta que Bunny termina el encoding. `/admin/galeria?tipo=timelapse` consulta el estado real a la API al cargar y se refresca cada 10 s mientras haya algo procesando. Si se configura el webhook, Bunny avisa al terminar. Cuando el video está listo, la galería recibe la URL del player (HLS) firmada por 1 hora.
+Un timelapse no puede ser **explícito**: los videos no se censuran, y lo explícito queda solo en Patreon.
+
+El video queda en **Procesando** hasta que Bunny termina el encoding. Si el archivo nunca llega (por ejemplo, se cerró la pestaña a mitad de la subida), pasa a **Video con error** cuando vencen las 6 horas de la autorización. `/admin/galeria?tipo=timelapse` consulta el estado real a la API al cargar y se refresca cada 10 s mientras haya algo procesando. Si se configura el webhook, Bunny avisa al terminar. Cuando el video está listo, la galería recibe la URL del player (HLS) firmada por 1 hora.
 
 | Variable                                          | Uso                                                                                                                                                                           |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

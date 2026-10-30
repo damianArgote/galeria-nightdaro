@@ -10,7 +10,7 @@ export class FakeVideoPort implements VideoPort {
   async createVideo(): Promise<{ videoId: string }> {
     if (this.failCreate) throw new Error("video service down");
     const videoId = `video-${this.next++}`;
-    this.statuses.set(videoId, "processing");
+    this.statuses.set(videoId, "awaiting_upload");
     return { videoId };
   }
 

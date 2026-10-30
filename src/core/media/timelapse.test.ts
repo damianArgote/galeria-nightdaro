@@ -124,6 +124,33 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
     });
   });
 
+  it("marks an upload that never arrived as failed once its authorization expired", async () => {
+    const created = new Date("2026-10-30T06:00:00.000Z");
+    media.now = () => created;
+    const abandoned = await start.execute(input);
+    // The second one starts later, so it is still inside its 6 hour TUS window.
+    media.now = () => NOW;
+    const recent = await start.execute({ ...input, title: "Recién" });
+    const at = (ms: number) => () => new Date(created.getTime() + ms);
+
+    await new SyncVideoStatus(media, video, at(6 * 3600_000 - 1000)).forArtworks([
+      abandoned.artworkId,
+    ]);
+    expect((await media.listByArtworkIds([abandoned.artworkId]))[0]!.status).toBe("processing");
+
+    await new SyncVideoStatus(media, video, at(6 * 3600_000 + 1000)).forArtworks([
+      abandoned.artworkId,
+      recent.artworkId,
+    ]);
+    const statuses = Object.fromEntries(
+      (await media.listByArtworkIds([abandoned.artworkId, recent.artworkId])).map((a) => [
+        a.artworkId,
+        a.status,
+      ]),
+    );
+    expect(statuses).toEqual({ [abandoned.artworkId]: "failed", [recent.artworkId]: "processing" });
+  });
+
   it("syncs one video from the webhook id and ignores unknown ids", async () => {
     const a = await start.execute(input);
     video.statuses.set("video-1", "ready");

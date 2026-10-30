@@ -1,11 +1,11 @@
 import type { Clock } from "../shared/clock";
 import { systemClock } from "../shared/clock";
 import { SIGNED_URL_TTL_MS } from "./list-artwork-images";
-import type { MediaAssetRepository, VideoPort, VideoStatus } from "./ports";
+import type { MediaAssetRepository, VideoPort } from "./ports";
 
 export interface PublicVideo {
   artworkId: string;
-  status: VideoStatus;
+  status: "processing" | "ready" | "failed";
   /** Signed for 1 hour; only when the video is ready. */
   playerUrl: string | null;
 }
@@ -22,7 +22,7 @@ export class ListArtworkVideos {
     const videos = new Map<string, PublicVideo>();
     for (const asset of await this.media.listByArtworkIds(artworkIds)) {
       if (asset.type !== "video" || !asset.streamVideoId) continue;
-      const status: VideoStatus =
+      const status: PublicVideo["status"] =
         asset.status === "ready" || asset.status === "failed" ? asset.status : "processing";
       videos.set(asset.artworkId, {
         artworkId: asset.artworkId,

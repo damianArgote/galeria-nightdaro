@@ -58,7 +58,8 @@ describe("BunnyStreamAdapter", () => {
   });
 
   it.each([
-    [0, "processing"],
+    [0, "awaiting_upload"],
+    [1, "processing"],
     [3, "processing"],
     [4, "ready"],
     [5, "failed"],

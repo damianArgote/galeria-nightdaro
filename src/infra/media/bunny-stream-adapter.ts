@@ -7,6 +7,7 @@ const PLAYER = "https://iframe.mediadelivery.net/embed";
 
 /** Bunny Stream `status`: 0 created … 3 transcoding, 4 finished, 5 error, 6 upload failed. */
 function toVideoStatus(status: number): VideoStatus {
+  if (status === 0) return "awaiting_upload";
   if (status === 4) return "ready";
   if (status === 5 || status === 6) return "failed";
   return "processing";

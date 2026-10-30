@@ -49,7 +49,8 @@ export interface MediaAssetRepository {
   delete(id: string): Promise<void>;
 }
 
-export type VideoStatus = "processing" | "ready" | "failed";
+/** `awaiting_upload`: the video exists but its file never arrived. */
+export type VideoStatus = "awaiting_upload" | "processing" | "ready" | "failed";
 
 /** What the browser needs to upload one file straight to the video service (TUS). */
 export interface VideoUploadAuthorization {
