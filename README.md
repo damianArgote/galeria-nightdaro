@@ -129,3 +129,15 @@ El video queda en **Procesando** hasta que Bunny termina el encoding. Si el arch
 En la librería de Stream conviene activar la autenticación por token del embed, la marca de agua y los dominios permitidos. Con un token inválido, Bunny responde igual HTTP 200, pero con una página que dice "403" y sin player.
 
 Prueba en vivo contra la librería configurada (sube un video de 3 s, espera el encoding, prueba la URL firmada y lo borra): `STREAM_LIVE=1 pnpm test:e2e timelapse-live`.
+
+## Galería pública
+
+`/`, `/en-proceso`, `/timelapses`, `/obra/[slug]` y `/apoyar` son Server Components con ISR (`revalidate = 300`), y cada cambio del panel las revalida. Cada página tiene dos variantes estáticas: `/g/sfw/…` y `/g/adult/…`. `src/middleware.ts` elige cuál servir según la cookie `age_ok` (los crawlers reciben siempre `sfw`) y reescribe la URL; `/g/*` no se puede pedir directo.
+
+- **Puerta +18:** sin la cookie, la consulta solo trae obras `sfw` y se muestra el modal. "Tengo 18 o más, entrar" guarda `age_ok` por 1 año; "Salir" saca del sitio. Si se desactiva en `/admin/pagina`, nadie ve contenido +18.
+- **Imágenes:** el HTML cacheado usa URLs estables (`/media/{id}/thumb|preview|player`). Esa ruta firma una URL de 1 hora en cada pedido y vuelve a chequear la cookie, así que los archivos +18 también necesitan la puerta.
+- **Tiers:** enlazan a `/r/{código}`, nunca directo. Cada tier nuevo crea su link de seguimiento.
+- **Metadatos:** `rating=adult` y la etiqueta RTA. El Open Graph de cada obra lleva imagen solo si es `sfw`.
+- **Disuasivos:** las imágenes no se pueden arrastrar, no tienen menú contextual y muestran un placeholder borroso mientras cargan. Solo llevan JS las pestañas, el lightbox y el modal.
+
+Variables opcionales: `SITE_URL` (base de las URLs absolutas del Open Graph y de la cookie `Secure`) y `CONTACT_EMAIL` (contacto en el pie).

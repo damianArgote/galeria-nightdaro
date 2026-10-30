@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { Argon2PasswordHasher } from "@/infra/auth/argon2-password-hasher";
 import { createTestDb, databaseUrl } from "../../tests/helpers/test-db";
 import { seed } from "./seed";
-import { siteSettings, tiers, users } from "./schema";
+import { siteSettings, tiers, trackingLinks, users } from "./schema";
 
 const admins = [
   { email: "Daro@Example.com", password: "daro-secret" },
@@ -50,6 +50,18 @@ describe.skipIf(!databaseUrl)("seed", () => {
       ["patreon", 1000, "USD"],
       ["patreon", 2000, "USD"],
     ]);
+  });
+
+  it("links each example tier through a tracking link", async () => {
+    await seed(testDb.db, admins);
+    await seed(testDb.db, admins);
+
+    const links = await testDb.db.select().from(trackingLinks).orderBy(asc(trackingLinks.code));
+    const rows = await testDb.db.select().from(tiers);
+    expect(links.map((l) => l.code)).toEqual(["patreon-1", "patreon-2", "patreon-3"]);
+    expect(links.every((l) => rows.some((t) => t.id === l.tierId && t.url === l.targetUrl))).toBe(
+      true,
+    );
   });
 
   it("creates both admins with argon2id password hashes", async () => {

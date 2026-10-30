@@ -31,6 +31,8 @@ export class FakeArtworkRepository implements ArtworkRepository {
     return [...this.items.values()]
       .filter((item) => !filter.kind || item.kind === filter.kind)
       .filter((item) => !filter.status || item.status === filter.status)
+      .filter((item) => !filter.ratings || filter.ratings.includes(item.rating))
+      .filter((item) => !filter.slug || item.slug === filter.slug)
       .sort((a, b) => a.position - b.position)
       .map(clone);
   }

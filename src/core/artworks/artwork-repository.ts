@@ -1,8 +1,11 @@
-import type { Artwork, ArtworkKind, ArtworkStatus } from "./artwork";
+import type { Artwork, ArtworkKind, ArtworkRating, ArtworkStatus } from "./artwork";
 
 export interface ArtworkFilter {
   kind?: ArtworkKind;
   status?: ArtworkStatus;
+  /** Only these ratings; filtered in the query so other ratings are never read. */
+  ratings?: ArtworkRating[];
+  slug?: string;
 }
 
 export interface ArtworkPosition {

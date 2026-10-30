@@ -15,6 +15,12 @@ import { ListTiers } from "@/core/links/list-tiers";
 import { ListTrackingLinks } from "@/core/links/list-tracking-links";
 import { UpdateTier } from "@/core/links/update-tier";
 import { UpdateTrackingLink } from "@/core/links/update-tracking-link";
+import {
+  GetPublicArtwork,
+  ListPublicGallery,
+  ResolvePublicMedia,
+} from "@/core/gallery/public-gallery";
+import { ListPublicTiers } from "@/core/gallery/public-tiers";
 import { ListArtworkImages } from "@/core/media/list-artwork-images";
 import { ListArtworkVideos } from "@/core/media/list-artwork-videos";
 import { RerenderArtworkImage } from "@/core/media/rerender-artwork-image";
@@ -59,6 +65,14 @@ const mediaAssets = () => new DrizzleMediaAssetRepository(getDb());
 const imageProcessor = new SharpImageProcessor();
 /** Every storage key starts with the tenant folder (see "Preparado para el SaaS"). */
 const STORAGE_KEY_PREFIX = "nightdaro";
+
+function publicDeps() {
+  return {
+    artworks: artworks(),
+    images: new ListArtworkImages(mediaAssets(), createUrlSigner()),
+    videos: new ListArtworkVideos(mediaAssets(), createVideoPort()),
+  };
+}
 
 function requireVideoPort() {
   const video = createVideoPort();
@@ -146,6 +160,22 @@ export const container = {
     return new ListArtworkImages(mediaAssets(), createUrlSigner());
   },
 
+  get listPublicGallery() {
+    return new ListPublicGallery(publicDeps());
+  },
+  get getPublicArtwork() {
+    return new GetPublicArtwork(publicDeps());
+  },
+  get resolvePublicMedia() {
+    return new ResolvePublicMedia(publicDeps());
+  },
+  get listPublicTiers() {
+    return new ListPublicTiers(tiers(), trackingLinks());
+  },
+  async findTrackingLink(code: string) {
+    return trackingLinks().findByCode(code);
+  },
+
   get getSiteSettings() {
     return new GetSiteSettings(siteSettings());
   },
@@ -157,10 +187,10 @@ export const container = {
     return new ListTiers(tiers());
   },
   get createTier() {
-    return new CreateTier(tiers());
+    return new CreateTier(tiers(), trackingLinks());
   },
   get updateTier() {
-    return new UpdateTier(tiers());
+    return new UpdateTier(tiers(), trackingLinks());
   },
   get deleteTier() {
     return new DeleteTier(tiers());

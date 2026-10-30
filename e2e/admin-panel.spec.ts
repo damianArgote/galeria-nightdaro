@@ -2,7 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { ADMIN_STATE } from "../playwright.config";
 import { uploadArtwork } from "./helpers";
 
-const rows = (page: Page) => page.getByTestId("artwork-row");
+// Only this spec's artworks: the demo seed fills the same tab.
+const rows = (page: Page) => page.getByTestId("artwork-row").filter({ hasText: "Obra E2E" });
 const row = (page: Page, title: string) => rows(page).filter({ hasText: title });
 
 async function createArtwork(page: Page, title: string) {
@@ -66,6 +67,11 @@ test.describe("admin panel", () => {
     await expect(page.getByLabel("Facebook")).toHaveValue(
       "https://www.facebook.com/knightcrowller",
     );
+
+    // Leave the age gate on for the public gallery specs.
+    await page.getByRole("switch", { name: "Pedir confirmación de edad" }).click();
+    await page.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(page.getByText("Cambios guardados.")).toBeVisible();
   });
 
   test("edits tiers and tracking links", async ({ page }) => {
@@ -89,10 +95,13 @@ test.describe("admin panel", () => {
     await newLink.getByLabel("Tier").selectOption({ label: "VIP" });
     await newLink.getByLabel("Destino").fill("https://fansly.com/nightdaro");
     await newLink.getByRole("button", { name: "Agregar" }).click();
-    await expect(page.getByTestId("tracking-link")).toContainText("/r/fansly-vip");
+    await expect(
+      page.getByTestId("tracking-link").filter({ hasText: "/r/fansly-vip" }),
+    ).toBeVisible();
 
     await page.reload();
     await expect(page.getByTestId("tier").first().getByLabel("Precio")).toHaveValue("7");
-    await expect(page.getByTestId("tracking-link")).toHaveCount(1);
+    // The seed links its three example tiers, the VIP tier gets its own, plus the manual one.
+    await expect(page.getByTestId("tracking-link")).toHaveCount(5);
   });
 });

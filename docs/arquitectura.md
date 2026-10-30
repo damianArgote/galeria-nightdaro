@@ -192,5 +192,6 @@ La migración completa (tabla `tenants`, `tenant_id` con default NightDaro, RLS,
 ## Decisiones abiertas
 
 - [ ] Dominio de NightDaro.
-- [ ] URL de su Patreon y sus tiers reales.
+- [x] URL de su Patreon: https://www.patreon.com/cw/Ndaro
+- [ ] Sus tiers reales.
 - [ ] Si se hace el paso 12 (Patreon) antes o después del lanzamiento.
