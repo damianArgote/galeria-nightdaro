@@ -109,6 +109,7 @@ export class UploadArtworkImage {
         height: original.height,
         streamVideoId: null,
         status: "ready",
+        renderedRating: artwork.rating,
       };
       const previous = await media.listByArtworkIds([artworkId]);
       await media.save(asset);

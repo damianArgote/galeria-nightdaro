@@ -27,8 +27,17 @@ export default async function GalleryPage({
       console.error("Could not sync video status", error);
     });
   }
+  // Images rendered for a milder rating than the artwork's (crossed edits, older uploads) are
+  // never signed; render them again here so the panel heals them.
+  for (const artwork of await container.listArtworkImages.findStale(artworks)) {
+    await container.rerenderArtworkImage
+      .execute(artwork.id, artwork.rating)
+      .catch((error: unknown) => {
+        console.error("Could not re-render a stale image", error);
+      });
+  }
   const [images, videoList] = await Promise.all([
-    container.listArtworkImages.execute(ids),
+    container.listArtworkImages.execute(artworks),
     container.listArtworkVideos.execute(ids),
   ]);
   const videos = Object.fromEntries(

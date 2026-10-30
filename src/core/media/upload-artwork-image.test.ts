@@ -175,12 +175,52 @@ describe("ListArtworkImages", () => {
       sign: (key: string, expiresAt: Date) => `https://cdn/${key}?e=${expiresAt.getTime()}`,
     };
 
-    const result = await new ListArtworkImages(media, signer, () => now).execute([id]);
+    const result = await new ListArtworkImages(media, signer, () => now).execute([
+      { id, rating: "sfw" },
+    ]);
 
     const image = result.get(id)!;
     expect(image.thumbUrl).toBe(
       `https://cdn/nightdaro/artworks/${id}/asset-1/thumb.webp?e=${now.getTime() + 3600_000}`,
     );
     expect(JSON.stringify(image)).not.toContain("original");
+  });
+
+  describe("an image rendered for another rating", () => {
+    const signer = { sign: (key: string) => `https://cdn/${key}` };
+
+    it.each([
+      ["sfw", "explicit", false],
+      ["suggestive", "explicit", false],
+      ["sfw", "suggestive", false],
+      ["explicit", "sfw", true],
+      ["explicit", "explicit", true],
+      ["suggestive", "sfw", true],
+    ] as const)(
+      "rendered for %s, artwork now %s: signed = %s",
+      async (renderedFor, current, signed) => {
+        const created = await artwork(renderedFor === "explicit" ? "explicit" : "sfw");
+        await artworks.save({ ...created, rating: renderedFor });
+        await upload().execute({ artworkId: created.id, image: JPEG, charactersAreAdults: true });
+        // A crossed edit changes the rating without re-rendering.
+        await artworks.save({ ...created, rating: current });
+        const list = new ListArtworkImages(media, signer);
+        const rated = [{ id: created.id, rating: current }];
+
+        expect((await list.execute(rated)).has(created.id)).toBe(signed);
+        expect(await list.findStale(rated)).toEqual(signed ? [] : rated);
+      },
+    );
+
+    it("treats an image without a rendered rating as stale", async () => {
+      const { id } = await artwork();
+      await upload().execute({ artworkId: id, image: JPEG, charactersAreAdults: true });
+      const [asset] = await media.listByArtworkIds([id]);
+      await media.save({ ...asset!, renderedRating: null });
+      const list = new ListArtworkImages(media, signer);
+
+      expect((await list.execute([{ id, rating: "sfw" }])).size).toBe(0);
+      expect(await list.findStale([{ id, rating: "sfw" }])).toEqual([{ id, rating: "sfw" }]);
+    });
   });
 });
