@@ -26,7 +26,8 @@ export class DrizzleMediaAssetRepository implements MediaAssetRepository {
 
   async save(asset: MediaAsset): Promise<void> {
     // created_at is set by the database and never changes.
-    const { createdAt: _createdAt, ...row } = asset;
+    const row = { ...asset };
+    delete row.createdAt;
     await this.db
       .insert(mediaAssets)
       .values(row)

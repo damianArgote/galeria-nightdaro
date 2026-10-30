@@ -48,6 +48,11 @@ describe("StartTimelapseUpload", () => {
     expect(upload).toMatchObject({ videoId: "video-1", expires: NOW.getTime() / 1000 + 6 * 3600 });
   });
 
+  it("rejects an explicit timelapse: videos cannot be censored", async () => {
+    await expect(start.execute({ ...input, rating: "explicit" as "sfw" })).rejects.toThrow();
+    expect(await artworks.list()).toEqual([]);
+  });
+
   it("requires the rating and the adults confirmation", async () => {
     await expect(start.execute({ ...input, charactersAreAdults: false as true })).rejects.toThrow(
       ZodError,

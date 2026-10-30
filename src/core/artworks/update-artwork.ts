@@ -3,6 +3,7 @@ import { NotFoundError } from "../shared/errors";
 import type { Artwork, ArtworkRating } from "./artwork";
 import type { ArtworkRepository } from "./artwork-repository";
 import { artworkFieldsSchema } from "./artwork-schemas";
+import { assertRatingAllowed } from "./rating";
 import { uniqueSlug } from "./unique-slug";
 
 /** Renders the public image again for a rating (RerenderArtworkImage). */
@@ -29,6 +30,7 @@ export class UpdateArtwork {
     const { id, ...fields } = updateArtworkSchema.parse(input);
     const current = await this.artworks.findById(id);
     if (!current) throw new NotFoundError("Artwork", id);
+    assertRatingAllowed(fields.kind, fields.rating);
 
     const slug =
       current.status === "draft" && fields.title !== current.title
