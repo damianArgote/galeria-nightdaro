@@ -18,7 +18,8 @@ import { SharpImageProcessor } from "./sharp-image-processor";
 import { LocalStorageAdapter } from "./storage-adapters";
 
 /** Real sharp + file-type + files on disk; only the repositories are in memory. */
-describe("image upload pipeline", () => {
+// sharp on full-size photos is slow on shared CI runners.
+describe("image upload pipeline", { timeout: 30_000 }, () => {
   let root: string;
   let storage: LocalStorageAdapter;
   let artworks: FakeArtworkRepository;
