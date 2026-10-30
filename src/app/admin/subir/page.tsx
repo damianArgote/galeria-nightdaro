@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/auth";
 import { Panel, PanelHeader, ViewHeader } from "@/components/admin/panel";
-import { CreateArtworkForm } from "./create-artwork-form";
+import { UploadArtworkForm } from "./upload-artwork-form";
 
 export default async function UploadPage() {
   await requireAdmin();
@@ -11,14 +11,14 @@ export default async function UploadPage() {
         kanji="投稿"
         eyebrow="Nueva obra"
         title="Subir a la galería"
-        description="Cargá los datos y el rating. Queda como borrador hasta que la publiques desde Galería."
+        description="Elegí la imagen, el tipo y el rating. Queda como borrador hasta que la publiques desde Galería. El original nunca sale de la zona privada."
       />
       <Panel className="max-w-2xl">
         <PanelHeader
           title="Datos de la obra"
-          description="La subida de la imagen se suma en el próximo paso; por ahora se crea sin imagen."
+          description="Se genera una miniatura, una preview con marca de agua y un placeholder."
         />
-        <CreateArtworkForm />
+        <UploadArtworkForm />
       </Panel>
     </>
   );

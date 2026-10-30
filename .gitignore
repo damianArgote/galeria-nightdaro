@@ -42,3 +42,6 @@ yarn-error.log*
 next-env.d.ts
 test-results/
 playwright-report/
+
+# local media storage (STORAGE_DRIVER=local)
+/.storage

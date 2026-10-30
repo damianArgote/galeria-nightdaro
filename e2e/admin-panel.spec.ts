@@ -1,22 +1,17 @@
 import { expect, test, type Page } from "@playwright/test";
-import { signIn } from "./helpers";
+import { ADMIN_STATE } from "../playwright.config";
+import { uploadArtwork } from "./helpers";
 
 const rows = (page: Page) => page.getByTestId("artwork-row");
 const row = (page: Page, title: string) => rows(page).filter({ hasText: title });
 
 async function createArtwork(page: Page, title: string) {
-  await page.goto("/admin/subir");
-  await page.getByLabel("Título").fill(title);
-  await page.getByText("Apto para todos").click();
-  await page.getByRole("button", { name: "Crear borrador" }).click();
-  await expect(page).toHaveURL(/\/admin\/galeria\?tipo=finished$/);
+  await uploadArtwork(page, title);
   await expect(row(page, title)).toContainText("Borrador");
 }
 
 test.describe("admin panel", () => {
-  test.beforeEach(async ({ page }) => {
-    await signIn(page);
-  });
+  test.use({ storageState: ADMIN_STATE });
 
   test("creates, publishes, reorders, edits and hides artworks", async ({ page }) => {
     await createArtwork(page, "Obra E2E A");

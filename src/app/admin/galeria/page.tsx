@@ -20,6 +20,13 @@ export default async function GalleryPage({
   await requireAdmin();
   const kind = parseKind((await searchParams).tipo);
   const artworks = await container.listArtworks.execute({ kind });
+  const images = await container.listArtworkImages.execute(artworks.map((a) => a.id));
+  const thumbs = Object.fromEntries(
+    [...images.values()].map((image) => [
+      image.artworkId,
+      { url: image.thumbUrl, blurData: image.blurData },
+    ]),
+  );
 
   return (
     <>
@@ -56,7 +63,7 @@ export default async function GalleryPage({
             Nueva obra
           </Button>
         </div>
-        <GalleryManager kind={kind} artworks={artworks} />
+        <GalleryManager kind={kind} artworks={artworks} thumbs={thumbs} />
       </Panel>
     </>
   );

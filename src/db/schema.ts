@@ -15,14 +15,15 @@ import {
 } from "drizzle-orm/pg-core";
 import { ARTWORK_KINDS, ARTWORK_RATINGS, ARTWORK_STATUSES } from "../core/artworks/artwork";
 import { TIER_PLATFORMS } from "../core/links/tier";
+import { MEDIA_STATUSES, MEDIA_TYPES } from "../core/media/media-asset";
 import type { SiteSeo, SiteSocials, SiteTheme } from "../core/site/site-settings";
 
 export const artworkKind = pgEnum("artwork_kind", ARTWORK_KINDS);
 export const artworkRating = pgEnum("artwork_rating", ARTWORK_RATINGS);
 export const artworkStatus = pgEnum("artwork_status", ARTWORK_STATUSES);
 export const tierPlatform = pgEnum("tier_platform", TIER_PLATFORMS);
-export const mediaType = pgEnum("media_type", ["image", "video"]);
-export const mediaStatus = pgEnum("media_status", ["processing", "ready", "failed"]);
+export const mediaType = pgEnum("media_type", MEDIA_TYPES);
+export const mediaStatus = pgEnum("media_status", MEDIA_STATUSES);
 export const eventType = pgEnum("event_type", ["view", "click", "age_ok"]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();

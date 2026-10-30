@@ -90,3 +90,24 @@ Los archivos `*.integration.test.ts` corren contra Postgres. Cada suite crea y m
 - **Links** (`/admin/links`) administra los tiers y los links de seguimiento `/r/{código}`.
 
 Cada Server Action del panel llama primero a `requireAdmin()`, valida con el esquema Zod del caso de uso (`src/core/**`), ejecuta el caso de uso desde `src/infra/container.ts` y revalida todo el sitio.
+
+## Imágenes
+
+`/admin/subir` sube la imagen (JPG, PNG o WebP, hasta 30 MB) a `POST /api/admin/artworks`, que crea el borrador y corre `UploadArtworkImage`:
+
+1. Valida el tipo real por magic bytes (`file-type`): un SVG o un `.exe` renombrado a `.jpg` se rechazan.
+2. Guarda el original sin metadatos (EXIF, GPS) en la zona `originals`, que no tiene URL pública.
+3. Genera con sharp la miniatura de 400 px, la preview de 1600 px WebP q75 con marca de agua en mosaico y un placeholder de 20 px, y los guarda en la zona `public`.
+4. Si la obra es `explicit`, las variantes públicas salen de la versión censurada que suba Daro o, si no hay, de un desenfoque fuerte.
+
+Las claves empiezan con `nightdaro/`. Las páginas reciben solo URLs firmadas de la zona pública, que vencen en 1 hora (Bunny Token Authentication, HMAC-SHA256); nunca una clave del original.
+
+| Variable                                    | Uso                                                                                                                                                                                                                     |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STORAGE_DRIVER`                            | Obligatoria en producción. `local` (por defecto en desarrollo) guarda en `LOCAL_STORAGE_DIR` (`.storage`) y sirve la zona pública en `/dev-media`, verificando el mismo token; `bunny` usa Bunny Storage y la Pull Zone |
+| `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC` | Nombres de las dos storage zones                                                                                                                                                                                        |
+| `BUNNY_STORAGE_KEY`                         | Contraseña de las zonas; si son distintas, `BUNNY_STORAGE_KEY_ORIGINALS` y `BUNNY_STORAGE_KEY_PUBLIC`                                                                                                                   |
+| `BUNNY_STORAGE_HOST`                        | Endpoint de la región (por defecto `storage.bunnycdn.com`)                                                                                                                                                              |
+| `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`         | Host de la Pull Zone de `public` y su clave de Token Authentication                                                                                                                                                     |
+
+La marca de agua es `src/infra/media/assets/watermark-tile.png`, generada con `node scripts/build-watermark.mjs` para que el servidor no dependa de fuentes instaladas.
