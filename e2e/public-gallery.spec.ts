@@ -1,5 +1,6 @@
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { DEMO_ARTWORKS } from "@/db/seed-demo";
+import { ADMIN_STATE } from "../playwright.config";
 
 const titles = (rating: string, kind = "finished") =>
   DEMO_ARTWORKS.filter((a) => a.rating === rating && a.kind === kind).map((a) => a.title);
@@ -42,6 +43,8 @@ test.describe("public gallery without the age gate", () => {
     await page.goto("/");
     await expect(page.getByRole("dialog", { name: /Contenido para adultos/ })).toBeVisible();
     await expect(page.getByTestId("gallery-card")).toHaveCount(SFW.length);
+    await expect(page.locator("main")).toHaveAttribute("inert", "");
+    await expect(page.getByRole("button", { name: "Tengo 18 o más, entrar" })).toBeFocused();
   });
 
   test("labels the site as adult content", async ({ page }) => {
@@ -76,6 +79,27 @@ test.describe("public gallery without the age gate", () => {
     const redirect = await page.request.get("/r/patreon-1", { maxRedirects: 0 });
     expect(redirect.status()).toBe(302);
     expect(redirect.headers().location).toBe("https://www.patreon.com/cw/Ndaro");
+  });
+
+  test("pages are served from the ISR cache and set no cookies", async ({ page }) => {
+    await page.request.get("/en-proceso");
+    const cached = await page.request.get("/en-proceso");
+
+    expect(cached.headers()["x-nextjs-cache"]).toMatch(/HIT|STALE/);
+    expect(cached.headers()["set-cookie"]).toBeUndefined();
+  });
+
+  test("a change in the panel reaches the cached public page", async ({ page, browser }) => {
+    await page.request.get("/");
+    const admin = await browser.newPage({ storageState: ADMIN_STATE });
+    const bio = `Bio desde el panel ${Date.now()}`;
+    await admin.goto("/admin/pagina");
+    await admin.getByLabel("Texto de presentación").fill(bio);
+    await admin.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(admin.getByText("Cambios guardados.")).toBeVisible();
+    await admin.close();
+
+    await expect.poll(async () => (await page.request.get("/")).text()).toContain(bio);
   });
 
   test("/g/* cannot be requested directly", async ({ page }) => {

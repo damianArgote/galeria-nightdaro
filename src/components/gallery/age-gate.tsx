@@ -9,11 +9,23 @@ export function AgeGate() {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const enter = useRef<HTMLButtonElement>(null);
+  const dialog = useRef<HTMLDivElement>(null);
 
-  useEffect(() => enter.current?.focus(), []);
+  // Focus starts on the dialog and nothing behind it can be focused or clicked.
+  useEffect(() => {
+    enter.current?.focus();
+    const siblings = [...(dialog.current?.parentElement?.children ?? [])].filter(
+      (el) => el !== dialog.current,
+    ) as HTMLElement[];
+    for (const el of siblings) el.inert = true;
+    return () => {
+      for (const el of siblings) el.inert = false;
+    };
+  }, []);
 
   return (
     <div
+      ref={dialog}
       role="dialog"
       aria-modal="true"
       aria-labelledby="age-gate-title"

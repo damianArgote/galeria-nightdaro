@@ -1,24 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { galleryRewrite, isCrawler } from "./routing";
+import { galleryRewrites, isCrawler } from "./routing";
 
 describe("gallery routing", () => {
-  it.each([
-    ["/", "/inicio"],
-    ["/en-proceso", "/en-proceso"],
-    ["/timelapses", "/timelapses"],
-    ["/apoyar", "/apoyar"],
-    ["/obra/calabaza-pin-up", "/obra/calabaza-pin-up"],
-  ])("rewrites %s", (path, target) => {
-    expect(galleryRewrite(path)).toBe(target);
-  });
-
-  it.each(["/admin", "/login", "/obra/../admin", "/obra/A B", "/r/x", "/media/x/thumb"])(
-    "leaves %s alone",
-    (path) => {
-      expect(galleryRewrite(path)).toBeNull();
-    },
-  );
-
   it.each([
     "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
     "facebookexternalhit/1.1",
@@ -27,6 +10,7 @@ describe("gallery routing", () => {
     "WhatsApp/2.23",
     "TelegramBot (like TwitterBot)",
     "redditbot/1.0",
+    "Mozilla/5.0 (compatible; bingbot/2.0)",
   ])("treats %s as a crawler", (ua) => {
     expect(isCrawler(ua)).toBe(true);
   });
@@ -38,5 +22,19 @@ describe("gallery routing", () => {
       ),
     ).toBe(false);
     expect(isCrawler(null)).toBe(true);
+  });
+
+  it("checks crawlers before the cookie and falls back to sfw for every page", () => {
+    const home = galleryRewrites().filter((r) => r.source === "/");
+
+    expect(home.map((r) => r.destination)).toEqual([
+      "/g/sfw/inicio",
+      "/g/sfw/inicio",
+      "/g/adult/inicio",
+      "/g/sfw/inicio",
+    ]);
+    expect(home[2]!.has).toEqual([{ type: "cookie", key: "age_ok", value: "1" }]);
+    expect(home.at(-1)).not.toHaveProperty("has");
+    expect(new Set(galleryRewrites().map((r) => r.source)).size).toBe(5);
   });
 });
