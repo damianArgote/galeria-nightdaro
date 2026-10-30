@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Upload as TusUpload } from "tus-js-client";
 import { z } from "zod";
 import type { ActionResult } from "@/app/admin/_lib/action-result";
 import { ARTWORK_RATINGS } from "@/core/artworks/artwork";
@@ -15,10 +16,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { deleteArtworkAction } from "../galeria/actions";
+import { startTimelapseUploadAction } from "./actions";
 
 const MAX_BYTES = 30 * 1024 * 1024;
 const ACCEPT = "image/jpeg,image/png,image/webp";
-const UPLOAD_KINDS = ["finished", "wip"] as const;
+const ACCEPT_VIDEO = "video/mp4,video/quicktime,video/webm,video/x-matroska";
+const UPLOAD_KINDS = ["finished", "wip", "timelapse"] as const;
+const KIND_NAMES: Record<(typeof UPLOAD_KINDS)[number], string> = {
+  finished: "Terminado",
+  wip: "En proceso",
+  timelapse: "Timelapse",
+};
 
 const formSchema = z.object({
   title: artworkFieldsSchema.shape.title,
@@ -36,6 +45,11 @@ type FormValues = z.input<typeof formSchema>;
 function fileProblem(file: File): string | undefined {
   if (!ACCEPT.split(",").includes(file.type)) return "Solo JPG, PNG o WebP";
   if (file.size > MAX_BYTES) return "El archivo supera los 30 MB";
+}
+
+/** Bunny Stream validates the video itself; it fails the encoding if the file is not one. */
+function videoProblem(file: File): string | undefined {
+  if (!file.type.startsWith("video/")) return "Elegí un archivo de video";
 }
 
 export function UploadArtworkForm() {
@@ -56,11 +70,46 @@ export function UploadArtworkForm() {
     defaultValues: { title: "", description: "", kind: "finished", tags: "" },
   });
   const explicit = watch("rating") === "explicit";
+  const timelapse = watch("kind") === "timelapse";
+
+  async function uploadTimelapse(values: FormValues, file: File) {
+    const tags = values.tags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const started = await startTimelapseUploadAction({
+      title: values.title,
+      description: values.description,
+      rating: values.rating,
+      tags,
+      charactersAreAdults: true,
+    });
+    if (!started.ok) {
+      setFormError(started.error);
+      applyFieldErrors(setError, started.fieldErrors);
+      return;
+    }
+
+    const { artworkId, upload } = started.data;
+    setProgress(0);
+    try {
+      await uploadToStream(file, values.title, upload, setProgress);
+      router.push("/admin/galeria?tipo=timelapse");
+    } catch {
+      await deleteArtworkAction({ id: artworkId });
+      setProgress(undefined);
+      setFormError("La subida del video falló. Probá de nuevo.");
+    }
+  }
 
   const submit = handleSubmit(async (values) => {
     setFormError(undefined);
     if (!image) {
-      setFileErrors({ image: "Elegí una imagen" });
+      setFileErrors({ image: timelapse ? "Elegí un video" : "Elegí una imagen" });
+      return;
+    }
+    if (values.kind === "timelapse") {
+      await uploadTimelapse(values, image);
       return;
     }
     const body = new FormData();
@@ -107,20 +156,27 @@ export function UploadArtworkForm() {
               <span aria-hidden className="block text-xs tracking-[0.3em] opacity-80">
                 {KIND_LABELS[kind].kanji}
               </span>
-              {kind === "finished" ? "Terminado" : KIND_LABELS[kind].label}
+              {KIND_NAMES[kind]}
             </label>
           ))}
         </div>
       </fieldset>
 
       <ImageDrop
-        label="Imagen"
-        hint="JPG, PNG o WebP · hasta 30 MB · el original se guarda en privado"
+        key={timelapse ? "video" : "image"}
+        label={timelapse ? "Video" : "Imagen"}
+        hint={
+          timelapse
+            ? "MP4, MOV, WebM o MKV · se sube directo a Bunny Stream, que lo sirve en HLS con marca de agua"
+            : "JPG, PNG o WebP · hasta 30 MB · el original se guarda en privado"
+        }
+        accept={timelapse ? ACCEPT_VIDEO : ACCEPT}
         file={image}
         error={fileErrors.image}
         onChange={(file) => {
           setImage(file);
-          setFileErrors((e) => ({ ...e, image: file && fileProblem(file) }));
+          const problem = file && (timelapse ? videoProblem(file) : fileProblem(file));
+          setFileErrors((e) => ({ ...e, image: problem }));
         }}
       />
 
@@ -161,8 +217,9 @@ export function UploadArtworkForm() {
         {errors.rating && <p className="text-xs text-destructive">{errors.rating.message}</p>}
       </fieldset>
 
-      {explicit && (
+      {explicit && !timelapse && (
         <ImageDrop
+          accept={ACCEPT}
           label="Versión censurada"
           hint="Opcional. Si no la subís, la web muestra un desenfoque fuerte."
           file={censored}
@@ -239,12 +296,14 @@ export function UploadArtworkForm() {
 function ImageDrop({
   label,
   hint,
+  accept,
   file,
   error,
   onChange,
 }: {
   label: string;
   hint: string;
+  accept: string;
   file?: File;
   error?: string;
   onChange: (file: File | undefined) => void;
@@ -254,7 +313,7 @@ function ImageDrop({
   const [preview, setPreview] = useState<string>();
 
   useEffect(() => {
-    if (!file) return setPreview(undefined);
+    if (!file || !file.type.startsWith("image/")) return setPreview(undefined);
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
@@ -289,12 +348,12 @@ function ImageDrop({
             墨
           </span>
         )}
-        <b className="text-sm">{file ? file.name : "Arrastrá la imagen o tocá para elegirla"}</b>
+        <b className="text-sm">{file ? file.name : `Arrastrá el archivo o tocá para elegirlo`}</b>
         <small className="text-xs text-muted-foreground">{hint}</small>
         <input
           id={id}
           type="file"
-          accept={ACCEPT}
+          accept={accept}
           aria-label={label}
           className="sr-only"
           onChange={(event) => onChange(event.target.files?.[0])}
@@ -325,5 +384,37 @@ function uploadWithProgress(
       );
     xhr.onerror = () => resolve({ ok: false, error: "No se pudo conectar. Probá de nuevo." });
     xhr.send(body);
+  });
+}
+
+/** Uploads straight to Bunny Stream with the server-signed, single-video authorization. */
+function uploadToStream(
+  file: File,
+  title: string,
+  auth: {
+    endpoint: string;
+    videoId: string;
+    libraryId: string;
+    signature: string;
+    expires: number;
+  },
+  onProgress: (percent: number) => void,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const upload = new TusUpload(file, {
+      endpoint: auth.endpoint,
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      headers: {
+        AuthorizationSignature: auth.signature,
+        AuthorizationExpire: String(auth.expires),
+        VideoId: auth.videoId,
+        LibraryId: auth.libraryId,
+      },
+      metadata: { filetype: file.type, title },
+      onProgress: (sent, total) => onProgress(Math.round((sent / total) * 100)),
+      onError: reject,
+      onSuccess: () => resolve(),
+    });
+    upload.start();
   });
 }

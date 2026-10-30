@@ -45,5 +45,27 @@ export interface MediaUrlSigner {
 export interface MediaAssetRepository {
   save(asset: MediaAsset): Promise<void>;
   listByArtworkIds(artworkIds: string[]): Promise<MediaAsset[]>;
+  findByStreamVideoId(videoId: string): Promise<MediaAsset | null>;
   delete(id: string): Promise<void>;
+}
+
+export type VideoStatus = "processing" | "ready" | "failed";
+
+/** What the browser needs to upload one file straight to the video service (TUS). */
+export interface VideoUploadAuthorization {
+  endpoint: string;
+  videoId: string;
+  libraryId: string;
+  signature: string;
+  /** Unix seconds. */
+  expires: number;
+}
+
+export interface VideoPort {
+  createVideo(title: string): Promise<{ videoId: string }>;
+  authorizeUpload(videoId: string, expiresAt: Date): VideoUploadAuthorization;
+  getStatus(videoId: string): Promise<VideoStatus>;
+  /** HLS player URL, valid until `expiresAt`. */
+  playerUrl(videoId: string, expiresAt: Date): string;
+  deleteVideo(videoId: string): Promise<void>;
 }

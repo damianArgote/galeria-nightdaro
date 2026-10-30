@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import { assetFiles, deleteFiles } from "../media/asset-files";
-import type { MediaAssetRepository, StoragePort } from "../media/ports";
+import type { MediaAssetRepository, StoragePort, VideoPort } from "../media/ports";
 import { NotFoundError } from "../shared/errors";
 import type { ArtworkRepository } from "./artwork-repository";
 import { artworkIdSchema } from "./artwork-schemas";
@@ -15,7 +15,11 @@ export type DeleteArtworkInput = z.input<typeof deleteArtworkSchema>;
 export class DeleteArtwork {
   constructor(
     private readonly artworks: ArtworkRepository,
-    private readonly files?: { media: MediaAssetRepository; storage: StoragePort },
+    private readonly files?: {
+      media: MediaAssetRepository;
+      storage: StoragePort;
+      video?: VideoPort | null;
+    },
   ) {}
 
   async execute(input: DeleteArtworkInput): Promise<void> {
@@ -26,11 +30,12 @@ export class DeleteArtwork {
     await this.artworks.delete(id);
     if (!this.files) return;
 
-    const { media, storage } = this.files;
+    const { media, storage, video } = this.files;
     for (const asset of assets) {
       // The row is usually gone already (cascade); its files must go even if this fails.
       await media.delete(asset.id).catch(() => {});
       await deleteFiles(storage, assetFiles(asset));
+      if (asset.streamVideoId) await video?.deleteVideo(asset.streamVideoId).catch(() => {});
     }
   }
 }

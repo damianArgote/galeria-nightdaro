@@ -20,7 +20,20 @@ export default async function GalleryPage({
   await requireAdmin();
   const kind = parseKind((await searchParams).tipo);
   const artworks = await container.listArtworks.execute({ kind });
-  const images = await container.listArtworkImages.execute(artworks.map((a) => a.id));
+  const ids = artworks.map((a) => a.id);
+  if (kind === "timelapse") {
+    // Light polling: the panel refreshes while a video is processing (see GalleryManager).
+    await container.syncVideoStatus?.forArtworks(ids).catch((error: unknown) => {
+      console.error("Could not sync video status", error);
+    });
+  }
+  const [images, videoList] = await Promise.all([
+    container.listArtworkImages.execute(ids),
+    container.listArtworkVideos.execute(ids),
+  ]);
+  const videos = Object.fromEntries(
+    [...videoList.values()].map((v) => [v.artworkId, { status: v.status, playerUrl: v.playerUrl }]),
+  );
   const thumbs = Object.fromEntries(
     [...images.values()].map((image) => [
       image.artworkId,
@@ -63,7 +76,7 @@ export default async function GalleryPage({
             Nueva obra
           </Button>
         </div>
-        <GalleryManager kind={kind} artworks={artworks} thumbs={thumbs} />
+        <GalleryManager kind={kind} artworks={artworks} thumbs={thumbs} videos={videos} />
       </Panel>
     </>
   );

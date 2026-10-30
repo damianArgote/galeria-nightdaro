@@ -1,7 +1,7 @@
 import "server-only";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { ConflictError, NotFoundError } from "@/core/shared/errors";
+import { ConflictError, InvalidInputError, NotFoundError } from "@/core/shared/errors";
 import type { ActionResult } from "./action-result";
 
 /**
@@ -28,7 +28,7 @@ export async function runAction<S extends z.ZodType, T>(
     revalidatePath("/", "layout");
     return { ok: true, data };
   } catch (error) {
-    if (error instanceof ConflictError) {
+    if (error instanceof ConflictError || error instanceof InvalidInputError) {
       return {
         ok: false,
         error: error.message,

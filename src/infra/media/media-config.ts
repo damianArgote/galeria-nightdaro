@@ -1,6 +1,8 @@
 import { resolve } from "node:path";
 import { requireEnv } from "@/db/env";
 import type { StoragePort } from "@/core/media/ports";
+import type { VideoPort } from "@/core/media/ports";
+import { BunnyStreamAdapter } from "./bunny-stream-adapter";
 import { SignedUrlService } from "./bunny-token";
 import { BunnyStorageAdapter, LocalStorageAdapter } from "./storage-adapters";
 
@@ -67,5 +69,17 @@ export function createUrlSigner(): SignedUrlService {
     baseUrl: `https://${requireEnv("BUNNY_CDN_HOST")}`,
     pathPrefix: "",
     securityKey: tokenKey(),
+  });
+}
+
+/** Bunny Stream, or null when the library is not configured (uploads then explain why). */
+export function createVideoPort(): VideoPort | null {
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID;
+  const apiKey = process.env.BUNNY_STREAM_API_KEY;
+  if (!libraryId || !apiKey) return null;
+  return new BunnyStreamAdapter({
+    libraryId,
+    apiKey,
+    tokenKey: requireEnv("BUNNY_STREAM_TOKEN_KEY"),
   });
 }

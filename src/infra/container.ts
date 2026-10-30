@@ -16,8 +16,12 @@ import { ListTrackingLinks } from "@/core/links/list-tracking-links";
 import { UpdateTier } from "@/core/links/update-tier";
 import { UpdateTrackingLink } from "@/core/links/update-tracking-link";
 import { ListArtworkImages } from "@/core/media/list-artwork-images";
+import { ListArtworkVideos } from "@/core/media/list-artwork-videos";
 import { RerenderArtworkImage } from "@/core/media/rerender-artwork-image";
+import { StartTimelapseUpload } from "@/core/media/start-timelapse-upload";
+import { SyncVideoStatus } from "@/core/media/sync-video-status";
 import { UploadArtworkImage } from "@/core/media/upload-artwork-image";
+import { InvalidInputError } from "@/core/shared/errors";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
 import { AuthenticateAdmin } from "@/core/users/authenticate-admin";
@@ -31,7 +35,7 @@ import {
   DrizzleTrackingLinkRepository,
 } from "./links/drizzle-link-repositories";
 import { DrizzleMediaAssetRepository } from "./media/drizzle-media-asset-repository";
-import { createStorage, createUrlSigner } from "./media/media-config";
+import { createStorage, createUrlSigner, createVideoPort } from "./media/media-config";
 import { SharpImageProcessor } from "./media/sharp-image-processor";
 import { DrizzleSiteSettingsRepository } from "./site/drizzle-site-settings-repository";
 import { DrizzleUserRepository } from "./users/drizzle-user-repository";
@@ -55,6 +59,16 @@ const mediaAssets = () => new DrizzleMediaAssetRepository(getDb());
 const imageProcessor = new SharpImageProcessor();
 /** Every storage key starts with the tenant folder (see "Preparado para el SaaS"). */
 const STORAGE_KEY_PREFIX = "nightdaro";
+
+function requireVideoPort() {
+  const video = createVideoPort();
+  if (!video) {
+    throw new InvalidInputError(
+      "Los timelapses necesitan Bunny Stream: configurá BUNNY_STREAM_LIBRARY_ID, BUNNY_STREAM_API_KEY y BUNNY_STREAM_TOKEN_KEY.",
+    );
+  }
+  return video;
+}
 
 export const container = {
   get authenticateAdmin() {
@@ -87,7 +101,11 @@ export const container = {
     return new HideArtwork(artworks());
   },
   get deleteArtwork() {
-    return new DeleteArtwork(artworks(), { media: mediaAssets(), storage: createStorage() });
+    return new DeleteArtwork(artworks(), {
+      media: mediaAssets(),
+      storage: createStorage(),
+      video: createVideoPort(),
+    });
   },
   get reorderGallery() {
     return new ReorderGallery(artworks());
@@ -101,6 +119,21 @@ export const container = {
       images: imageProcessor,
       keyPrefix: STORAGE_KEY_PREFIX,
     });
+  },
+  get startTimelapseUpload() {
+    return new StartTimelapseUpload({
+      artworks: artworks(),
+      media: mediaAssets(),
+      video: requireVideoPort(),
+    });
+  },
+  /** Null when Bunny Stream is not configured: nothing to sync. */
+  get syncVideoStatus() {
+    const video = createVideoPort();
+    return video && new SyncVideoStatus(mediaAssets(), video);
+  },
+  get listArtworkVideos() {
+    return new ListArtworkVideos(mediaAssets(), createVideoPort());
   },
   get listArtworkImages() {
     return new ListArtworkImages(mediaAssets(), createUrlSigner());
