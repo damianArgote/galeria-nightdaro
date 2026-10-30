@@ -91,11 +91,9 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
 
     await new SyncVideoStatus(media, video).forArtworks([a.artworkId, b.artworkId, c.artworkId]);
 
-    const videos = await new ListArtworkVideos(media, video, () => NOW).execute([
-      a.artworkId,
-      b.artworkId,
-      c.artworkId,
-    ]);
+    const videos = await new ListArtworkVideos(media, video, () => NOW).execute(
+      [a, b, c].map(({ artworkId }) => ({ id: artworkId, rating: "sfw" as const })),
+    );
     expect(videos.get(a.artworkId)).toEqual({
       artworkId: a.artworkId,
       status: "ready",
@@ -168,7 +166,23 @@ describe("SyncVideoStatus and ListArtworkVideos", () => {
     video.statuses.set("video-1", "ready");
     await new SyncVideoStatus(media, video).forArtworks([a.artworkId]);
 
-    const videos = await new ListArtworkVideos(media, null).execute([a.artworkId]);
+    const videos = await new ListArtworkVideos(media, null).execute([
+      { id: a.artworkId, rating: "sfw" },
+    ]);
+
+    expect(videos.get(a.artworkId)).toMatchObject({ status: "ready", playerUrl: null });
+  });
+});
+
+describe("an explicit timelapse created before the rule", () => {
+  it("never gets a signed player URL", async () => {
+    const a = await start.execute(input);
+    video.statuses.set("video-1", "ready");
+    await new SyncVideoStatus(media, video).forArtworks([a.artworkId]);
+
+    const videos = await new ListArtworkVideos(media, video).execute([
+      { id: a.artworkId, rating: "explicit" },
+    ]);
 
     expect(videos.get(a.artworkId)).toMatchObject({ status: "ready", playerUrl: null });
   });

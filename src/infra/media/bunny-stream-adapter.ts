@@ -70,7 +70,8 @@ export class BunnyStreamAdapter implements VideoPort {
     if (response.status === 404) return "failed";
     if (!response.ok) throw new Error(`Bunny Stream get video failed with ${response.status}`);
     const body = (await response.json()) as { status?: number };
-    return toVideoStatus(body.status ?? 0);
+    // Without a status we cannot tell "never uploaded" apart; keep waiting.
+    return typeof body.status === "number" ? toVideoStatus(body.status) : "processing";
   }
 
   playerUrl(videoId: string, expiresAt: Date): string {
