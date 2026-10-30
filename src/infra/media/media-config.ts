@@ -1,6 +1,8 @@
 import { resolve } from "node:path";
 import { requireEnv } from "@/db/env";
 import type { StoragePort } from "@/core/media/ports";
+import type { VideoPort } from "@/core/media/ports";
+import { BunnyStreamAdapter } from "./bunny-stream-adapter";
 import { SignedUrlService } from "./bunny-token";
 import { BunnyStorageAdapter, LocalStorageAdapter } from "./storage-adapters";
 
@@ -68,4 +70,16 @@ export function createUrlSigner(): SignedUrlService {
     pathPrefix: "",
     securityKey: tokenKey(),
   });
+}
+
+/**
+ * Bunny Stream, or null until the library, its API key and its embed token key are all set
+ * (uploads then explain what is missing; the rest of the panel keeps working).
+ */
+export function createVideoPort(): VideoPort | null {
+  const libraryId = process.env.BUNNY_STREAM_LIBRARY_ID;
+  const apiKey = process.env.BUNNY_STREAM_API_KEY;
+  const tokenKey = process.env.BUNNY_STREAM_TOKEN_KEY;
+  if (!libraryId || !apiKey || !tokenKey) return null;
+  return new BunnyStreamAdapter({ libraryId, apiKey, tokenKey });
 }

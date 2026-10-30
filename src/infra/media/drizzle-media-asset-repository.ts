@@ -37,6 +37,14 @@ export class DrizzleMediaAssetRepository implements MediaAssetRepository {
       .where(inArray(mediaAssets.artworkId, artworkIds));
   }
 
+  async findByStreamVideoId(videoId: string): Promise<MediaAsset | null> {
+    const [row] = await this.db
+      .select(columns)
+      .from(mediaAssets)
+      .where(eq(mediaAssets.streamVideoId, videoId));
+    return row ?? null;
+  }
+
   async delete(id: string): Promise<void> {
     await this.db.delete(mediaAssets).where(eq(mediaAssets.id, id));
   }

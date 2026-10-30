@@ -14,6 +14,11 @@ export class FakeMediaAssetRepository implements MediaAssetRepository {
       .map((asset) => ({ ...asset }));
   }
 
+  async findByStreamVideoId(videoId: string): Promise<MediaAsset | null> {
+    const asset = [...this.items.values()].find((a) => a.streamVideoId === videoId);
+    return asset ? { ...asset } : null;
+  }
+
   async delete(id: string): Promise<void> {
     this.items.delete(id);
   }

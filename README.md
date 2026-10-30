@@ -111,3 +111,19 @@ Las claves empiezan con `nightdaro/`. Las páginas reciben solo URLs firmadas de
 | `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`         | Host de la Pull Zone de `public` y su clave de Token Authentication                                                                                                                                                     |
 
 La marca de agua es `src/infra/media/assets/watermark-tile.png`, generada con `node scripts/build-watermark.mjs` para que el servidor no dependa de fuentes instaladas.
+
+## Timelapses
+
+En `/admin/subir`, con el tipo **Timelapse**, el panel llama a `startTimelapseUploadAction`. Esa acción crea el borrador y el video vacío en Bunny Stream, y devuelve una firma TUS que sirve solo para ese video y dura 6 horas (`sha256(library_id + api_key + expiración + video_id)`). El navegador sube el archivo directo a Bunny con `tus-js-client`, así que el video nunca pasa por el servidor.
+
+El video queda en **Procesando** hasta que Bunny termina el encoding. `/admin/galeria?tipo=timelapse` consulta el estado real a la API al cargar y se refresca cada 10 s mientras haya algo procesando. Si se configura el webhook, Bunny avisa al terminar. Cuando el video está listo, la galería recibe la URL del player (HLS) firmada por 1 hora.
+
+| Variable                                          | Uso                                                                                                                                                                           |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY` | Librería de Stream y su API key. Sin ellas, subir un timelapse explica qué falta                                                                                              |
+| `BUNNY_STREAM_TOKEN_KEY`                          | Clave de "Embed view token authentication" de la librería, para firmar el player                                                                                              |
+| `BUNNY_STREAM_READONLY_KEY`                       | Opcional: activa el webhook `POST /api/webhooks/bunny-stream`. Verifica la firma v1 (HMAC-SHA256 del body) y vuelve a consultar el estado a la API, sin confiar en el payload |
+
+En la librería de Stream conviene activar la autenticación por token del embed, la marca de agua y los dominios permitidos. Con un token inválido, Bunny responde igual HTTP 200, pero con una página que dice "403" y sin player.
+
+Prueba en vivo contra la librería configurada (sube un video de 3 s, espera el encoding, prueba la URL firmada y lo borra): `STREAM_LIVE=1 pnpm test:e2e timelapse-live`.

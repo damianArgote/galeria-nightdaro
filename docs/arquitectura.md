@@ -162,7 +162,7 @@ Un solo servicio en Render que despliega desde `main`.
 
 Total: unos US$9/mes. El plan gratis de Render no sirve porque el servicio se duerme y la primera visita tarda.
 
-Variables de entorno (en Render, nunca en el repo): `DATABASE_URL`, `AUTH_SECRET`, `BUNNY_STORAGE_KEY`, `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC`, `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `SITE_URL`, `SENTRY_DSN`.
+Variables de entorno (en Render, nunca en el repo): `DATABASE_URL`, `AUTH_SECRET`, `BUNNY_STORAGE_KEY`, `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC`, `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_KEY` (firma del player), `BUNNY_STREAM_READONLY_KEY` (opcional, verifica el webhook de Stream), `SITE_URL`, `SENTRY_DSN`.
 
 ## Seguridad, puerta +18 y moderación
 

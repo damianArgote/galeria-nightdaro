@@ -17,6 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
 import type { Artwork, ArtworkKind } from "@/core/artworks/artwork";
 import { ArtworkForm } from "@/components/admin/artwork-form";
@@ -37,15 +38,39 @@ export interface Thumb {
   blurData: string | null;
 }
 
+export interface VideoInfo {
+  status: "processing" | "ready" | "failed";
+  playerUrl: string | null;
+}
+
+const VIDEO_STATUS_LABELS: Record<VideoInfo["status"], string> = {
+  processing: "Procesando video",
+  ready: "Video listo",
+  failed: "Video con error",
+};
+
+const POLL_MS = 10_000;
+
 export function GalleryManager({
   kind,
   artworks,
   thumbs,
+  videos,
 }: {
   kind: ArtworkKind;
   artworks: Artwork[];
   thumbs: Record<string, Thumb>;
+  videos: Record<string, VideoInfo>;
 }) {
+  const router = useRouter();
+  const processing = Object.values(videos).some((v) => v.status === "processing");
+
+  // While Bunny Stream encodes, refresh so the page asks for the status again.
+  useEffect(() => {
+    if (!processing) return;
+    const timer = setInterval(() => router.refresh(), POLL_MS);
+    return () => clearInterval(timer);
+  }, [processing, router]);
   const [items, setItems] = useState(artworks);
   const [error, setError] = useState<string>();
   const [, startTransition] = useTransition();
@@ -101,6 +126,7 @@ export function GalleryManager({
                 artwork={artwork}
                 position={index + 1}
                 thumb={thumbs[artwork.id]}
+                video={videos[artwork.id]}
               />
             ))}
           </ul>
@@ -114,10 +140,12 @@ function ArtworkRow({
   artwork,
   position,
   thumb,
+  video,
 }: {
   artwork: Artwork;
   position: number;
   thumb?: Thumb;
+  video?: VideoInfo;
 }) {
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState<string>();
@@ -186,6 +214,28 @@ function ArtworkRow({
           </Badge>
           <Badge variant="secondary">{RATING_LABELS[artwork.rating].label}</Badge>
           <span className="font-mono">/{artwork.slug}</span>
+          {video && (
+            <Badge
+              variant="outline"
+              data-testid="video-status"
+              className={cn(
+                video.status === "ready" && "border-brand-green text-brand-green",
+                video.status === "failed" && "border-destructive text-destructive",
+              )}
+            >
+              {VIDEO_STATUS_LABELS[video.status]}
+            </Badge>
+          )}
+          {video?.playerUrl && (
+            <a
+              href={video.playerUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="text-brand-sky underline underline-offset-2"
+            >
+              Ver video
+            </a>
+          )}
         </div>
       </div>
       <div className="col-span-3 flex flex-wrap gap-1.5 sm:col-span-1">
