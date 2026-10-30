@@ -114,6 +114,26 @@ describe("changing the rating of an artwork with an image", () => {
     expect(publicKeys()).toEqual(before);
   });
 
+  it("restores censored variants when saving a less strict rating fails", async () => {
+    const artwork = await artworkWithImage("explicit");
+    const failingSave = Object.create(artworks) as FakeArtworkRepository;
+    failingSave.save = async () => {
+      throw new Error("db down");
+    };
+
+    await expect(
+      new UpdateArtwork(failingSave, rerender()).execute({ ...artwork, rating: "sfw" }),
+    ).rejects.toThrow("db down");
+
+    expect(rendered).toEqual([
+      { source: JPEG, blur: false },
+      { source: JPEG, blur: true },
+    ]);
+    const [asset] = await media.listByArtworkIds([artwork.id]);
+    expect(asset!.blurData).toBe("data:true");
+    expect((await artworks.findById(artwork.id))?.rating).toBe("explicit");
+  });
+
   it("changes the rating of an artwork without image", async () => {
     const artwork = await new CreateArtwork(artworks).execute({
       title: "Sin imagen",

@@ -41,12 +41,17 @@ export class UpdateArtwork {
       position = target.reduce((max, a) => Math.max(max, a.position + 1), 0);
     }
 
-    if (fields.rating !== current.rating) {
-      await this.publicImage?.execute(id, fields.rating);
-    }
+    const ratingChanged = fields.rating !== current.rating;
+    if (ratingChanged) await this.publicImage?.execute(id, fields.rating);
 
     const updated: Artwork = { ...current, ...fields, slug, position };
-    await this.artworks.save(updated);
+    try {
+      await this.artworks.save(updated);
+    } catch (error) {
+      // The variants already follow the new rating; put them back in line with the saved one.
+      if (ratingChanged) await this.publicImage?.execute(id, current.rating).catch(() => {});
+      throw error;
+    }
     return updated;
   }
 }

@@ -28,7 +28,8 @@ export class DeleteArtwork {
 
     const { media, storage } = this.files;
     for (const asset of assets) {
-      await media.delete(asset.id);
+      // The row is usually gone already (cascade); its files must go even if this fails.
+      await media.delete(asset.id).catch(() => {});
       await deleteFiles(storage, assetFiles(asset));
     }
   }
