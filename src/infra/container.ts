@@ -15,6 +15,8 @@ import { ListTiers } from "@/core/links/list-tiers";
 import { ListTrackingLinks } from "@/core/links/list-tracking-links";
 import { UpdateTier } from "@/core/links/update-tier";
 import { UpdateTrackingLink } from "@/core/links/update-tracking-link";
+import { ListArtworkImages } from "@/core/media/list-artwork-images";
+import { UploadArtworkImage } from "@/core/media/upload-artwork-image";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
 import { AuthenticateAdmin } from "@/core/users/authenticate-admin";
@@ -27,6 +29,9 @@ import {
   DrizzleTierRepository,
   DrizzleTrackingLinkRepository,
 } from "./links/drizzle-link-repositories";
+import { DrizzleMediaAssetRepository } from "./media/drizzle-media-asset-repository";
+import { createStorage, createUrlSigner } from "./media/media-config";
+import { SharpImageProcessor } from "./media/sharp-image-processor";
 import { DrizzleSiteSettingsRepository } from "./site/drizzle-site-settings-repository";
 import { DrizzleUserRepository } from "./users/drizzle-user-repository";
 
@@ -44,6 +49,11 @@ const artworks = () => new DrizzleArtworkRepository(getDb());
 const siteSettings = () => new DrizzleSiteSettingsRepository(getDb());
 const tiers = () => new DrizzleTierRepository(getDb());
 const trackingLinks = () => new DrizzleTrackingLinkRepository(getDb());
+const mediaAssets = () => new DrizzleMediaAssetRepository(getDb());
+
+const imageProcessor = new SharpImageProcessor();
+/** Every storage key starts with the tenant folder (see "Preparado para el SaaS"). */
+const STORAGE_KEY_PREFIX = "nightdaro";
 
 export const container = {
   get authenticateAdmin() {
@@ -73,6 +83,19 @@ export const container = {
   },
   get reorderGallery() {
     return new ReorderGallery(artworks());
+  },
+
+  get uploadArtworkImage() {
+    return new UploadArtworkImage({
+      artworks: artworks(),
+      media: mediaAssets(),
+      storage: createStorage(),
+      images: imageProcessor,
+      keyPrefix: STORAGE_KEY_PREFIX,
+    });
+  },
+  get listArtworkImages() {
+    return new ListArtworkImages(mediaAssets(), createUrlSigner());
   },
 
   get getSiteSettings() {

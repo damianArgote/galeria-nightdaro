@@ -15,3 +15,14 @@ export class ConflictError extends Error {
     this.name = "ConflictError";
   }
 }
+
+/** The input broke a rule the user can fix (wrong file type, too large…). */
+export class InvalidInputError extends Error {
+  constructor(
+    message: string,
+    readonly field?: string,
+  ) {
+    super(message);
+    this.name = "InvalidInputError";
+  }
+}
