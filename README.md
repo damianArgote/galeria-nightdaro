@@ -124,4 +124,6 @@ El video queda en **Procesando** hasta que Bunny termina el encoding. `/admin/ga
 | `BUNNY_STREAM_TOKEN_KEY`                          | Clave de "Embed view token authentication" de la librería, para firmar el player                                                                                              |
 | `BUNNY_STREAM_READONLY_KEY`                       | Opcional: activa el webhook `POST /api/webhooks/bunny-stream`. Verifica la firma v1 (HMAC-SHA256 del body) y vuelve a consultar el estado a la API, sin confiar en el payload |
 
-En la librería de Stream conviene activar la autenticación por token del embed, la marca de agua y los dominios permitidos.
+En la librería de Stream conviene activar la autenticación por token del embed, la marca de agua y los dominios permitidos. Con un token inválido, Bunny responde igual HTTP 200, pero con una página que dice "403" y sin player.
+
+Prueba en vivo contra la librería configurada (sube un video de 3 s, espera el encoding, prueba la URL firmada y lo borra): `STREAM_LIVE=1 pnpm test:e2e timelapse-live`.

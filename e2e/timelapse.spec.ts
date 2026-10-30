@@ -3,6 +3,10 @@ import { ADMIN_STATE } from "../playwright.config";
 
 test.describe("timelapses without Bunny Stream configured", () => {
   test.use({ storageState: ADMIN_STATE });
+  test.skip(
+    !!process.env.BUNNY_STREAM_LIBRARY_ID,
+    "Bunny Stream is configured in this environment",
+  );
 
   test("explains what is missing and creates nothing", async ({ page }) => {
     await page.goto("/admin/subir");
