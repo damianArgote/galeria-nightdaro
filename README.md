@@ -81,3 +81,12 @@ Los archivos `*.integration.test.ts` corren contra Postgres. Cada suite crea y m
 - `src/middleware.ts` redirige a `/login` cualquier ruta `/admin` sin sesión, y el layout de `/admin` vuelve a verificarla.
 - Cada Server Action del panel llama primero a `requireAdmin()` (`src/auth.ts`), que lanza `UnauthorizedError` sin sesión.
 - El login admite 5 intentos por minuto por IP, en memoria (alcanza con una sola instancia).
+
+## Panel
+
+- **Subir** (`/admin/subir`) crea una obra como borrador. La imagen se suma en el paso de subida de imágenes.
+- **Galería** (`/admin/galeria?tipo=finished|wip|timelapse`) ordena cada pestaña arrastrando (mouse o teclado: Espacio, flechas, Espacio), y permite editar, publicar, ocultar y borrar.
+- **Página** (`/admin/pagina`) edita nombre, bio, SEO, color de acento, puerta +18 y redes (links `https://`).
+- **Links** (`/admin/links`) administra los tiers y los links de seguimiento `/r/{código}`.
+
+Cada Server Action del panel llama primero a `requireAdmin()`, valida con el esquema Zod del caso de uso (`src/core/**`), ejecuta el caso de uso desde `src/infra/container.ts` y revalida todo el sitio.

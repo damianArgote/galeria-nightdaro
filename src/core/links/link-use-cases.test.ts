@@ -54,6 +54,17 @@ describe("tiers", () => {
     expect(await tiers.list()).toEqual([]);
   });
 
+  it("rejects a second tier with the same name on the same platform", async () => {
+    const create = new CreateTier(tiers);
+    const tier = await create.execute(tierInput);
+    await create.execute({ ...tierInput, platform: "fansly" });
+
+    await expect(create.execute({ ...tierInput, name: "tinta" })).rejects.toThrow(ConflictError);
+    await expect(
+      new UpdateTier(tiers).execute({ ...tierInput, id: tier.id, priceCents: 800 }),
+    ).resolves.toMatchObject({ priceCents: 800 });
+  });
+
   it("rejects invalid input and unknown ids", async () => {
     await expect(
       new CreateTier(tiers).execute({ ...tierInput, url: "http://insecure.example" }),

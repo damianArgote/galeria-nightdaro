@@ -22,3 +22,15 @@ export async function assertLinkRefs(
     throw new ConflictError("El tier elegido no existe", "tierId");
   }
 }
+
+/** Platform + name identify a tier (unique in the database). */
+export async function assertTierNameFree(
+  tiers: TierRepository,
+  { platform, name, ownId }: { platform: string; name: string; ownId?: string },
+) {
+  const all = await tiers.list();
+  const taken = all.some(
+    (t) => t.platform === platform && t.name.toLowerCase() === name.toLowerCase() && t.id !== ownId,
+  );
+  if (taken) throw new ConflictError(`Ya hay un tier "${name}" en esa plataforma`, "name");
+}

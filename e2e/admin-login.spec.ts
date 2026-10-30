@@ -1,13 +1,9 @@
 import { expect, test } from "@playwright/test";
+import { adminCredentials } from "./helpers";
 
-const email = process.env.SEED_DARO_EMAIL ?? "";
-const password = process.env.SEED_DARO_PASSWORD ?? "";
+const { email, password } = adminCredentials();
 
 test.describe("admin access", () => {
-  test.beforeAll(() => {
-    if (!email || !password) throw new Error("SEED_DARO_EMAIL and SEED_DARO_PASSWORD are required");
-  });
-
   for (const path of ["/admin", "/admin/galeria"]) {
     test(`redirects ${path} to /login without a session`, async ({ page }) => {
       await page.goto(path);

@@ -1,7 +1,5 @@
-import { pathToFileURL } from "node:url";
 import { Argon2PasswordHasher } from "../infra/auth/argon2-password-hasher";
-import { createDb, type Db } from "./client";
-import { loadLocalEnv, requireEnv } from "./env";
+import type { Db } from "./client";
 import { siteSettings, tiers, users } from "./schema";
 
 export interface SeedAdmin {
@@ -53,25 +51,4 @@ export async function seed(db: Db, admins: SeedAdmin[]): Promise<void> {
       })
       .onConflictDoNothing();
   }
-}
-
-async function main() {
-  loadLocalEnv();
-  const { db, close } = createDb(requireEnv("DATABASE_URL"));
-  try {
-    await seed(db, [
-      { email: requireEnv("SEED_DARO_EMAIL"), password: requireEnv("SEED_DARO_PASSWORD") },
-      { email: requireEnv("SEED_DAMI_EMAIL"), password: requireEnv("SEED_DAMI_PASSWORD") },
-    ]);
-    console.log("Seed completed.");
-  } finally {
-    await close();
-  }
-}
-
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
 }

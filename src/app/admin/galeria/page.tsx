@@ -1,3 +1,63 @@
-export default function GalleryPage() {
-  return <h1 className="text-2xl font-bold">Galería</h1>;
+import Link from "next/link";
+import { requireAdmin } from "@/auth";
+import { ARTWORK_KINDS, type ArtworkKind } from "@/core/artworks/artwork";
+import { KIND_LABELS } from "@/components/admin/artwork-labels";
+import { Panel, ViewHeader } from "@/components/admin/panel";
+import { Button } from "@/components/ui/button";
+import { container } from "@/infra/container";
+import { cn } from "@/lib/utils";
+import { GalleryManager } from "./gallery-manager";
+
+function parseKind(value: string | string[] | undefined): ArtworkKind {
+  return ARTWORK_KINDS.find((kind) => kind === value) ?? "finished";
+}
+
+export default async function GalleryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ tipo?: string | string[] }>;
+}) {
+  await requireAdmin();
+  const kind = parseKind((await searchParams).tipo);
+  const artworks = await container.listArtworks.execute({ kind });
+
+  return (
+    <>
+      <ViewHeader
+        kanji="画廊"
+        eyebrow="Orden de la página"
+        title="Administrar la galería"
+        description="Arrastrá para cambiar el orden en que aparecen. La primera de cada pestaña se ve primero. Ocultar no borra la obra."
+      />
+      <Panel>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <nav
+            aria-label="Filtrar por tipo"
+            className="flex flex-wrap gap-1.5 rounded-sm border-2 border-black bg-card p-1 shadow-[3px_3px_0_#000]"
+          >
+            {ARTWORK_KINDS.map((k) => (
+              <Link
+                key={k}
+                href={`/admin/galeria?tipo=${k}`}
+                aria-current={k === kind ? "page" : undefined}
+                className={cn(
+                  "rounded-xs px-3 py-1.5 text-center text-sm font-bold text-muted-foreground",
+                  k === kind && "bg-foreground text-background",
+                )}
+              >
+                <span aria-hidden className="block text-xs tracking-[0.3em] opacity-80">
+                  {KIND_LABELS[k].kanji}
+                </span>
+                {KIND_LABELS[k].label}
+              </Link>
+            ))}
+          </nav>
+          <Button nativeButton={false} render={<Link href="/admin/subir" />}>
+            Nueva obra
+          </Button>
+        </div>
+        <GalleryManager kind={kind} artworks={artworks} />
+      </Panel>
+    </>
+  );
 }
