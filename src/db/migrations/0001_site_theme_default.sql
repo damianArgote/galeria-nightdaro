@@ -1,0 +1,1 @@
+ALTER TABLE "site_settings" ALTER COLUMN "theme" SET DEFAULT '{"accent":"violet"}'::jsonb;

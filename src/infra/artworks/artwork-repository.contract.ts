@@ -86,6 +86,21 @@ export function describeArtworkRepositoryContract(
       ).toEqual([first.id, third.id]);
     });
 
+    it("updates positions so the list follows the new order", async () => {
+      const a = buildArtwork({ position: 0 });
+      const b = buildArtwork({ position: 1 });
+      const c = buildArtwork({ position: 2 });
+      for (const artwork of [a, b, c]) await repository.save(artwork);
+
+      await repository.updatePositions([
+        { id: c.id, position: 0 },
+        { id: a.id, position: 1 },
+        { id: b.id, position: 2 },
+      ]);
+
+      expect((await repository.list()).map((x) => x.id)).toEqual([c.id, a.id, b.id]);
+    });
+
     it("deletes an artwork", async () => {
       const artwork = buildArtwork();
       await repository.save(artwork);
