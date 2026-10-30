@@ -5,6 +5,8 @@ export type StorageZone = "originals" | "public";
 
 export interface StoragePort {
   put(zone: StorageZone, key: string, data: Uint8Array, contentType: string): Promise<void>;
+  /** The stored bytes, or null when the key does not exist. */
+  get(zone: StorageZone, key: string): Promise<Uint8Array | null>;
   delete(zone: StorageZone, key: string): Promise<void>;
 }
 

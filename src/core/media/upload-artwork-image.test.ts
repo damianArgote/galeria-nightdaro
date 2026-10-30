@@ -5,18 +5,9 @@ import { FakeMediaAssetRepository } from "@/infra/media/fake-media-asset-reposit
 import { CreateArtwork } from "../artworks/create-artwork";
 import { InvalidInputError, NotFoundError } from "../shared/errors";
 import { ListArtworkImages } from "./list-artwork-images";
-import type { ImageProcessor, StoragePort, StorageZone } from "./ports";
+import { MemoryStorage } from "@/infra/media/memory-storage";
+import type { ImageProcessor } from "./ports";
 import { MAX_IMAGE_BYTES, UploadArtworkImage } from "./upload-artwork-image";
-
-class MemoryStorage implements StoragePort {
-  readonly files = new Map<string, Uint8Array>();
-  async put(zone: StorageZone, key: string, data: Uint8Array) {
-    this.files.set(`${zone}:${key}`, data);
-  }
-  async delete(zone: StorageZone, key: string) {
-    this.files.delete(`${zone}:${key}`);
-  }
-}
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 1]);
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 2]);

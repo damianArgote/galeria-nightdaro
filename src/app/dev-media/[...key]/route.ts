@@ -24,15 +24,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ key:
   );
   if (!valid) return new Response("Forbidden", { status: 403 });
 
-  let data: Buffer | null;
+  let data: Uint8Array | null;
   try {
-    data = await new LocalStorageAdapter(localStorageRoot()).read("public", key);
+    data = await new LocalStorageAdapter(localStorageRoot()).get("public", key);
   } catch {
     return new Response("Not found", { status: 404 });
   }
   if (!data) return new Response("Not found", { status: 404 });
 
-  return new Response(new Uint8Array(data), {
+  return new Response(data as BodyInit, {
     headers: { "Content-Type": "image/webp", "Cache-Control": "private, max-age=600" },
   });
 }

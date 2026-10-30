@@ -159,4 +159,36 @@ test.describe("image upload", () => {
     expect(response.status()).toBe(401);
     await anonymous.close();
   });
+
+  test("changing the rating to explicit replaces the public image; deleting removes it", async ({
+    page,
+  }) => {
+    await page.goto("/admin/subir");
+    await page.getByLabel("Imagen").setInputFiles(await pngFile("rating.png", "#ffb84d"));
+    await page.getByLabel("Título").fill("Cambio de rating");
+    await page.getByText("Apto para todos", { exact: true }).click();
+    await page.getByText("Todos los personajes son adultos").click();
+    await page.getByRole("button", { name: "Crear borrador" }).click();
+    await expect(page).toHaveURL(/\/admin\/galeria\?tipo=finished$/);
+
+    const row = page.getByTestId("artwork-row").filter({ hasText: "Cambio de rating" });
+    const thumb = row.getByTestId("artwork-thumb");
+    const oldSrc = (await thumb.getAttribute("src"))!;
+
+    await row.getByRole("button", { name: "Editar" }).click();
+    await row.getByText("Explícito", { exact: true }).click();
+    await row.getByRole("button", { name: "Guardar cambios" }).click();
+    await expect(row).toContainText("Explícito");
+
+    await expect(thumb).not.toHaveAttribute("src", oldSrc);
+    const newSrc = (await thumb.getAttribute("src"))!;
+    expect(newSrc).toMatch(/thumb-[0-9a-f]{8}\.webp\?token=/);
+    expect((await page.request.get(oldSrc)).status()).toBe(404);
+    expect((await page.request.get(newSrc)).status()).toBe(200);
+
+    page.once("dialog", (dialog) => dialog.accept());
+    await row.getByRole("button", { name: "Borrar" }).click();
+    await expect(row).toHaveCount(0);
+    expect((await page.request.get(newSrc)).status()).toBe(404);
+  });
 });

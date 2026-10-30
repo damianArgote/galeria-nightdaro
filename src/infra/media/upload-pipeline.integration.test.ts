@@ -4,6 +4,9 @@ import { join } from "node:path";
 import sharp from "sharp";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { CreateArtwork } from "@/core/artworks/create-artwork";
+import { DeleteArtwork } from "@/core/artworks/delete-artwork";
+import { UpdateArtwork } from "@/core/artworks/update-artwork";
+import { RerenderArtworkImage } from "@/core/media/rerender-artwork-image";
 import { UploadArtworkImage } from "@/core/media/upload-artwork-image";
 import { InvalidInputError } from "@/core/shared/errors";
 import { FakeArtworkRepository } from "@/infra/artworks/fake-artwork-repository";
@@ -11,6 +14,7 @@ import {
   EXE_RENAMED_AS_JPG,
   jpegWithExif,
   pngImage,
+  stripedImage,
   SVG_IMAGE,
 } from "../../../tests/helpers/images";
 import { FakeMediaAssetRepository } from "./fake-media-asset-repository";
@@ -44,7 +48,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
     await rm(root, { recursive: true, force: true });
   });
 
-  const artwork = (rating: "sfw" | "suggestive" | "explicit" = "sfw") =>
+  const artwork_ = (rating: "sfw" | "suggestive" | "explicit" = "sfw") =>
     new CreateArtwork(artworks).execute({ title: "Prueba", kind: "finished", rating });
 
   const files = async (zone: string) =>
@@ -56,7 +60,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
     ["an SVG", SVG_IMAGE],
     ["an .exe renamed to .jpg", EXE_RENAMED_AS_JPG],
   ])("rejects %s and writes nothing", async (_name, bytes) => {
-    const { id } = await artwork();
+    const { id } = await artwork_();
 
     await expect(
       upload.execute({ artworkId: id, image: bytes, charactersAreAdults: true }),
@@ -67,7 +71,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
   });
 
   it("stores the original without EXIF and renders the public variants", async () => {
-    const { id } = await artwork();
+    const { id } = await artwork_();
     const image = await jpegWithExif();
     expect(await sharp(image).metadata()).toMatchObject({
       orientation: 6,
@@ -104,7 +108,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
   });
 
   it("never enlarges a small image and watermarks the preview", async () => {
-    const { id } = await artwork();
+    const { id } = await artwork_();
     const plain = await pngImage(800, 600);
 
     await upload.execute({ artworkId: id, image: plain, charactersAreAdults: true });
@@ -122,7 +126,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
     [1000, 200],
     [200, 1000],
   ])("accepts an image smaller than the watermark tile (%ix%i)", async (width, height) => {
-    const { id } = await artwork();
+    const { id } = await artwork_();
 
     await upload.execute({
       artworkId: id,
@@ -136,7 +140,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
   });
 
   it("blurs explicit art when there is no censored version", async () => {
-    const { id } = await artwork("explicit");
+    const { id } = await artwork_("explicit");
 
     await upload.execute({
       artworkId: id,
@@ -152,7 +156,7 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
   });
 
   it("uses the censored upload as the public image of explicit art", async () => {
-    const { id } = await artwork("explicit");
+    const { id } = await artwork_("explicit");
 
     await upload.execute({
       artworkId: id,
@@ -166,5 +170,50 @@ describe("image upload pipeline", { timeout: 30_000 }, () => {
     const thumb = await sharp(await readFile(join(root, "public", asset!.thumbKey!))).stats();
     expect(thumb.dominant).toMatchObject({ r: expect.any(Number) });
     expect(thumb.channels[2]!.mean).toBeGreaterThan(200);
+  });
+
+  it("re-renders a censored public image when the rating becomes explicit", async () => {
+    const artwork = await artwork_("sfw");
+    await upload.execute({
+      artworkId: artwork.id,
+      image: await stripedImage(),
+      charactersAreAdults: true,
+    });
+    const [before] = await media.listByArtworkIds([artwork.id]);
+    const sharpThumb = await sharp(await readFile(join(root, "public", before!.thumbKey!))).stats();
+    expect(sharpThumb.channels[0]!.stdev).toBeGreaterThan(80);
+
+    const images = new SharpImageProcessor();
+    await new UpdateArtwork(artworks, new RerenderArtworkImage({ media, storage, images })).execute(
+      {
+        ...artwork,
+        rating: "explicit",
+      },
+    );
+
+    const [after] = await media.listByArtworkIds([artwork.id]);
+    expect(after!.thumbKey).not.toBe(before!.thumbKey);
+    const blurred = await sharp(await readFile(join(root, "public", after!.thumbKey!))).stats();
+    // The stripes are gone: at most a quarter of the contrast survives the strong blur.
+    expect(blurred.channels[0]!.stdev).toBeLessThan(sharpThumb.channels[0]!.stdev / 4);
+    expect(await storage.get("public", before!.thumbKey!)).toBeNull();
+    expect(await storage.get("public", before!.previewKey!)).toBeNull();
+    expect(await storage.get("originals", after!.originalKey!)).not.toBeNull();
+  });
+
+  it("deletes every file of a deleted artwork", async () => {
+    const artwork = await artwork_("explicit");
+    await upload.execute({
+      artworkId: artwork.id,
+      image: await pngImage(),
+      censored: await pngImage(600, 400, "#22e4ff"),
+      charactersAreAdults: true,
+    });
+    expect(await files("originals")).toHaveLength(2);
+
+    await new DeleteArtwork(artworks, { media, storage }).execute({ id: artwork.id });
+
+    expect(await files("originals")).toEqual([]);
+    expect(await files("public")).toEqual([]);
   });
 });
