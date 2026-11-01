@@ -1,14 +1,29 @@
 import { requireAdmin } from "@/auth";
 import { Panel, PanelHeader, ViewHeader } from "@/components/admin/panel";
 import { container } from "@/infra/container";
+import { PatreonPanel } from "./patreon-panel";
 import { TierEditor } from "./tier-editor";
 import { TrackingLinkEditor } from "./tracking-link-editor";
 
-export default async function LinksPage() {
+export default async function LinksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ patreon?: string }>;
+}) {
   await requireAdmin();
-  const [tiers, links] = await Promise.all([
+  const patreon = container.patreon;
+  const [tiers, links, patreonStatus, params, patreonTiers] = await Promise.all([
     container.listTiers.execute(),
     container.listTrackingLinks.execute(),
+    patreon
+      ? // A connection sealed with another PATREON_TOKEN_KEY cannot be read: offer to reconnect.
+        patreon.status.execute().catch((error: unknown) => {
+          console.error("Could not read the Patreon connection", error);
+          return { connected: false as const };
+        })
+      : null,
+    searchParams,
+    patreon ? patreon.listPatreonTiers() : [],
   ]);
 
   return (
@@ -20,14 +35,19 @@ export default async function LinksPage() {
         description="La galería nunca enlaza directo: cada botón pasa por un link /r/ que cuenta el clic."
       />
       <div className="grid max-w-4xl gap-6">
+        <PatreonPanel status={patreonStatus} result={params.patreon} />
         <Panel>
           <PanelHeader title="Tiers" description="Los niveles que se muestran en /apoyar." />
           <div className="grid gap-3">
             {tiers.map((tier) => (
               // Remount when the highlight moves to another tier, so no form keeps a stale checkbox.
-              <TierEditor key={`${tier.id}-${tier.highlighted}`} tier={tier} />
+              <TierEditor
+                key={`${tier.id}-${tier.highlighted}-${tier.patreonTierId}`}
+                tier={tier}
+                patreonTiers={patreonTiers}
+              />
             ))}
-            <TierEditor />
+            <TierEditor patreonTiers={patreonTiers} />
           </div>
         </Panel>
         <Panel>

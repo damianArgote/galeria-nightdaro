@@ -29,6 +29,20 @@
       "when": 1793565438833,
       "tag": "0003_tier_benefits",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793566922490,
+      "tag": "0004_patreon_connection",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793567539317,
+      "tag": "0005_patreon_webhook",
+      "breakpoints": true
     }
   ]
 }

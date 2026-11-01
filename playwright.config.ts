@@ -46,6 +46,11 @@ export default defineConfig({
       DATABASE_URL: e2eDatabaseUrl(),
       STORAGE_DRIVER: "local",
       LOCAL_STORAGE_DIR: E2E_STORAGE_DIR,
+      SITE_URL: `http://localhost:${PORT}`,
+      // A Patreon client that is configured but never reached: the specs stop at the redirect.
+      PATREON_CLIENT_ID: "e2e-client-id",
+      PATREON_CLIENT_SECRET: "e2e-client-secret",
+      PATREON_TOKEN_KEY: "e2e-only-patreon-token-key",
     },
   },
 });
