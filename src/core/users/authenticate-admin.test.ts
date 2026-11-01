@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { AuthenticateAdmin } from "./authenticate-admin";
+import { AuthenticateAdmin, MAX_PASSWORD_LENGTH } from "./authenticate-admin";
 import type { PasswordHasher } from "./password-hasher";
 import type { AdminUser } from "./user";
 import type { UserRepository } from "./user-repository";
@@ -47,5 +47,39 @@ describe("AuthenticateAdmin", () => {
 
   it("rejects empty credentials", async () => {
     await expect(authenticate.execute({ email: "", password: "" })).resolves.toBeNull();
+  });
+
+  it("rejects credentials that are not text (a file posted to the login form)", async () => {
+    vi.mocked(hasher.verify).mockClear();
+
+    await expect(
+      authenticate.execute({ email: "daro@example.com", password: new Blob(["secret"]) }),
+    ).resolves.toBeNull();
+    await expect(
+      authenticate.execute({ email: ["daro@example.com"], password: "secret" }),
+    ).resolves.toBeNull();
+    await expect(authenticate.execute(null)).resolves.toBeNull();
+    expect(hasher.verify).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized password without hashing it", async () => {
+    vi.mocked(hasher.verify).mockClear();
+
+    await expect(
+      authenticate.execute({
+        email: "daro@example.com",
+        password: "x".repeat(MAX_PASSWORD_LENGTH + 1),
+      }),
+    ).resolves.toBeNull();
+    expect(hasher.verify).not.toHaveBeenCalled();
+  });
+
+  it("rejects an oversized email", async () => {
+    vi.mocked(hasher.verify).mockClear();
+
+    await expect(
+      authenticate.execute({ email: `${"a".repeat(250)}@example.com`, password: "secret" }),
+    ).resolves.toBeNull();
+    expect(hasher.verify).not.toHaveBeenCalled();
   });
 });

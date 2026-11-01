@@ -211,6 +211,16 @@ test.describe("public gallery after the age gate", () => {
   });
 
   test("Open Graph only carries a sfw image", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
+      "content",
+      /^https?:\/\/[^/]+\/og\.jpg$/,
+    );
+    await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+      "content",
+      "summary_large_image",
+    );
+
     await acceptGate(page);
     const sfwSlug = "calabaza-pin-up";
     await page.goto(`/obra/${sfwSlug}`);
