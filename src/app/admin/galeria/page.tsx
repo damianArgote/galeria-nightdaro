@@ -66,6 +66,7 @@ export default async function GalleryPage({
       <Panel>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <nav
+            data-tour="gallery-tabs"
             aria-label="Filtrar por tipo"
             className="flex flex-wrap gap-1.5 rounded-sm border-2 border-black bg-card p-1 shadow-[3px_3px_0_#000]"
           >
@@ -86,7 +87,11 @@ export default async function GalleryPage({
               </Link>
             ))}
           </nav>
-          <Button nativeButton={false} render={<Link href="/admin/subir" />}>
+          <Button
+            nativeButton={false}
+            data-tour="gallery-new"
+            render={<Link href="/admin/subir" />}
+          >
             Nueva obra
           </Button>
         </div>

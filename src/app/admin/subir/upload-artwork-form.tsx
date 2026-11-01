@@ -165,7 +165,7 @@ export function UploadArtworkForm() {
 
   return (
     <form onSubmit={submit} noValidate className="grid gap-5">
-      <fieldset className="grid gap-2">
+      <fieldset className="grid gap-2" data-tour="upload-kind">
         <legend className="mb-2 text-sm font-bold">Tipo</legend>
         <div className="flex flex-wrap gap-1.5 rounded-sm border-2 border-black bg-card p-1 shadow-[3px_3px_0_#000]">
           {UPLOAD_KINDS.map((kind) => (
@@ -183,23 +183,25 @@ export function UploadArtworkForm() {
         </div>
       </fieldset>
 
-      <ImageDrop
-        key={timelapse ? "video" : "image"}
-        label={timelapse ? "Video" : "Imagen"}
-        hint={
-          timelapse
-            ? "MP4, MOV, WebM o MKV · se sube directo a Bunny Stream, que lo sirve en HLS con marca de agua"
-            : "JPG, PNG o WebP · hasta 30 MB · el original se guarda en privado"
-        }
-        accept={timelapse ? ACCEPT_VIDEO : ACCEPT}
-        file={image}
-        error={fileErrors.image}
-        onChange={(file) => {
-          setImage(file);
-          const problem = file && (timelapse ? videoProblem(file) : fileProblem(file));
-          setFileErrors((e) => ({ ...e, image: problem }));
-        }}
-      />
+      <div data-tour="upload-file">
+        <ImageDrop
+          key={timelapse ? "video" : "image"}
+          label={timelapse ? "Video" : "Imagen"}
+          hint={
+            timelapse
+              ? "MP4, MOV, WebM o MKV · se sube directo a Bunny Stream, que lo sirve en HLS con marca de agua"
+              : "JPG, PNG o WebP · hasta 30 MB · el original se guarda en privado"
+          }
+          accept={timelapse ? ACCEPT_VIDEO : ACCEPT}
+          file={image}
+          error={fileErrors.image}
+          onChange={(file) => {
+            setImage(file);
+            const problem = file && (timelapse ? videoProblem(file) : fileProblem(file));
+            setFileErrors((e) => ({ ...e, image: problem }));
+          }}
+        />
+      </div>
 
       <FormField id="upload-title" label="Título" error={errors.title?.message}>
         <Input id="upload-title" aria-invalid={!!errors.title} {...register("title")} />
@@ -213,7 +215,7 @@ export function UploadArtworkForm() {
         <Textarea id="upload-description" rows={2} {...register("description")} />
       </FormField>
 
-      <fieldset className="grid gap-2">
+      <fieldset className="grid gap-2" data-tour="upload-rating">
         <legend className="mb-2 text-sm font-bold">Rating</legend>
         <div className="grid gap-2 sm:grid-cols-3">
           {ARTWORK_RATINGS.map((rating) => (
@@ -283,7 +285,7 @@ export function UploadArtworkForm() {
         <Input id="upload-tags" {...register("tags")} />
       </FormField>
 
-      <div>
+      <div data-tour="upload-adults">
         <label className="flex cursor-pointer items-start gap-3 rounded-sm border-2 border-border bg-background p-3 text-sm">
           <input
             type="checkbox"
@@ -328,7 +330,11 @@ export function UploadArtworkForm() {
         </p>
       )}
       <div className="flex justify-end">
-        <Button type="submit" disabled={uploading || !!fileErrors.image || !!fileErrors.censored}>
+        <Button
+          type="submit"
+          data-tour="upload-submit"
+          disabled={uploading || !!fileErrors.image || !!fileErrors.censored}
+        >
           {uploading ? "Subiendo…" : "Crear borrador"}
         </Button>
       </div>

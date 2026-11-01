@@ -69,7 +69,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
 
   return (
     <form onSubmit={submit} noValidate className="grid max-w-3xl gap-6">
-      <Panel>
+      <Panel data-tour="page-texts">
         <PanelHeader
           title="Banner y textos"
           description="Por ahora la página usa el banner del diseño; la subida desde acá está en la deuda técnica (docs/deuda-tecnica.md)."
@@ -108,7 +108,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
         </div>
       </Panel>
 
-      <Panel>
+      <Panel data-tour="page-theme">
         <PanelHeader title="Tema" description="Color de acento de la página pública." />
         <fieldset className="flex flex-wrap gap-2">
           <legend className="sr-only">Color de acento</legend>
@@ -132,7 +132,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
         </fieldset>
       </Panel>
 
-      <Panel>
+      <Panel data-tour="page-gate">
         <PanelHeader title="Puerta +18" description="Se aplica a toda la página." />
         <div className="flex items-center justify-between gap-3 rounded-sm border-2 border-border bg-background p-3">
           <div>
@@ -157,7 +157,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
         </div>
       </Panel>
 
-      <Panel>
+      <Panel data-tour="page-socials">
         <PanelHeader title="Redes" description="Aparecen en el pie de la página. Links https://" />
         <div className="grid gap-3">
           {SOCIAL_NETWORKS.map((network) => (
@@ -196,7 +196,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
             {status.message}
           </p>
         )}
-        <Button type="submit" disabled={isSubmitting || !isDirty}>
+        <Button type="submit" data-tour="page-save" disabled={isSubmitting || !isDirty}>
           {isSubmitting ? "Guardando…" : "Guardar cambios"}
         </Button>
       </div>

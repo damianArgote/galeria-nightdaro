@@ -94,6 +94,7 @@ export default async function SummaryPage({
 
       <form
         method="get"
+        data-tour="range"
         className="mb-6 flex flex-wrap items-end gap-3"
         aria-label="Filtrar por fechas"
       >
@@ -134,7 +135,7 @@ export default async function SummaryPage({
         )}
       </form>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4" data-tour="stats">
         <Stat label="Visitas" kanji="訪問" value={number(summary.visits)} detail="páginas vistas" />
         <Stat
           label="Visitantes únicos"
@@ -157,7 +158,7 @@ export default async function SummaryPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <Panel>
+        <Panel data-tour="daily">
           <PanelHeader title="Visitas y clics por día" description="Hora de Buenos Aires." />
           <DailyCharts daily={summary.daily} />
           <details className="mt-4 text-sm">
@@ -184,7 +185,7 @@ export default async function SummaryPage({
         </Panel>
 
         <div className="grid content-start gap-6">
-          <Panel>
+          <Panel data-tour="tier-clicks">
             <PanelHeader title="Clics por tier" />
             <div data-testid="clicks-by-tier">
               <BarList
@@ -215,7 +216,7 @@ export default async function SummaryPage({
       </div>
 
       {patreonSummary && (
-        <Panel className="mt-6" data-testid="patreon-summary">
+        <Panel className="mt-6" data-testid="patreon-summary" data-tour="patreon">
           <PanelHeader
             title="Patreon"
             description="Altas y bajas del período, junto a los clics de cada tier. Activos e ingreso son de hoy."
@@ -280,7 +281,7 @@ export default async function SummaryPage({
         </Panel>
       )}
 
-      <Panel className="mt-6">
+      <Panel className="mt-6" data-tour="top-artworks">
         <PanelHeader
           title="Obras más vistas"
           description="Vistas en el lightbox o en la ficha de la obra."

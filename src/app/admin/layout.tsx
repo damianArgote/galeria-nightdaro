@@ -40,7 +40,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </p>
           </div>
         </div>
-        <nav aria-label="Panel">
+        <nav aria-label="Panel" data-tour="nav">
           <AdminNav owner={admin.role === "owner"} />
         </nav>
         <div className="flex flex-col gap-3 md:mt-auto">
@@ -73,7 +73,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </aside>
       <main className="min-w-0 pb-16">
-        <AdminTopbar />
+        <AdminTopbar adminId={admin.id} />
         <div className="max-w-[1240px] px-4 pt-6 md:px-6">{children}</div>
       </main>
     </div>

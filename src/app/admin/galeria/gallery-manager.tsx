@@ -121,7 +121,11 @@ export function GalleryManager({
       )}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((a) => a.id)} strategy={verticalListSortingStrategy}>
-          <ul className="grid gap-2.5" aria-label="Obras en orden de la galería">
+          <ul
+            className="grid gap-2.5"
+            aria-label="Obras en orden de la galería"
+            data-tour="gallery-list"
+          >
             {items.map((artwork, index) => (
               <ArtworkRow
                 key={artwork.id}
@@ -262,7 +266,11 @@ function ArtworkRow({
           )}
         </div>
       </div>
-      <div className="col-span-3 flex flex-wrap gap-1.5 sm:col-span-1">
+      <div
+        className="col-span-3 flex flex-wrap gap-1.5 sm:col-span-1"
+        // Only the first row is shown in the tutorial.
+        data-tour={position === 1 ? "gallery-row-actions" : undefined}
+      >
         <Button
           size="icon"
           variant="tile"
