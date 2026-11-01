@@ -12,8 +12,10 @@ services:
     branch: main
     # Corepack provides the pnpm version of package.json#packageManager. Node comes from .node-version.
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
-    preDeployCommand: corepack enable && pnpm db:migrate
-    startCommand: corepack enable && pnpm start
+    # Same as `pnpm db:migrate` and `pnpm start`, through the installed binaries: no pnpm (or
+    # network download of it) needed after the build.
+    preDeployCommand: node_modules/.bin/drizzle-kit migrate
+    startCommand: node_modules/.bin/next start
     healthCheckPath: /api/health
     # Deploy main only after the CI checks pass.
     autoDeployTrigger: checksPass

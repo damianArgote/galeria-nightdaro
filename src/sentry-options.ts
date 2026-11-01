@@ -12,7 +12,9 @@ const PRIVATE_HEADERS = [
 
 /**
  * Options shared by the browser, server and edge SDKs. No PII (no IPs, cookies or users),
- * no Session Replay (it would record what visitors see, +18 art included) and a low trace rate.
+ * no Session Replay (it would record what visitors see, +18 art included) and no performance
+ * traces: errors are all that is needed, and transactions would carry request headers that
+ * beforeSend does not scrub.
  */
 export function sentryOptions(dsn: string | undefined) {
   return {
@@ -20,7 +22,7 @@ export function sentryOptions(dsn: string | undefined) {
     enabled: Boolean(dsn),
     environment: process.env.NODE_ENV,
     sendDefaultPii: false,
-    tracesSampleRate: 0.1,
+    tracesSampleRate: 0,
     beforeSend(event: ErrorEvent) {
       if (event.request?.headers) {
         for (const header of PRIVATE_HEADERS) delete event.request.headers[header];

@@ -2,11 +2,17 @@ import { expect, test } from "@playwright/test";
 import { ADMIN_STATE } from "../playwright.config";
 
 test.describe("deploy endpoints", () => {
-  test("the health check answers with the database up", async ({ request }) => {
-    const response = await request.get("/api/health");
-    expect(response.status()).toBe(200);
-    expect(await response.json()).toEqual({ status: "ok" });
-    expect(response.headers()["cache-control"]).toBe("no-store");
+  test("the health check answers without touching the database; ?db=1 checks it", async ({
+    request,
+  }) => {
+    const live = await request.get("/api/health");
+    expect(live.status()).toBe(200);
+    expect(await live.json()).toEqual({ status: "ok" });
+    expect(live.headers()["cache-control"]).toBe("no-store");
+
+    const deep = await request.get("/api/health?db=1");
+    expect(deep.status()).toBe(200);
+    expect(await deep.json()).toEqual({ status: "ok", database: "ok" });
   });
 
   test("the IP diagnostic is admin only and shows the headers it receives", async ({ browser }) => {

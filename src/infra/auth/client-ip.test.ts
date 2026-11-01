@@ -34,4 +34,10 @@ describe("clientIp", () => {
     ).toBe("1.2.3.4");
     expect(clientIp(new Headers({ "cf-connecting-ip": "2001:db8::1" }))).toBe("2001:db8::1");
   });
+
+  it("falls back when the configured header name is not a valid header", () => {
+    vi.stubEnv("CLIENT_IP_HEADER", "not a header");
+
+    expect(clientIp(new Headers({ "x-forwarded-for": "1.2.3.4" }))).toBe("1.2.3.4");
+  });
 });

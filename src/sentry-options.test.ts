@@ -7,6 +7,8 @@ describe("sentryOptions", () => {
     expect(sentryOptions(undefined)).toMatchObject({ enabled: false, sendDefaultPii: false });
     expect(sentryOptions("https://key@o1.ingest.sentry.io/1")).toMatchObject({ enabled: true });
     expect(sentryOptions("x")).not.toHaveProperty("replaysSessionSampleRate");
+    // Errors only: transactions would carry request headers that beforeSend does not see.
+    expect(sentryOptions("x")).toMatchObject({ tracesSampleRate: 0 });
   });
 
   it("strips IP, cookie and session headers and the user's details before sending", () => {

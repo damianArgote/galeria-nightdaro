@@ -20,7 +20,7 @@ Orden recomendado: Neon → Bunny → Sentry → Render → Cloudflare → verif
 2. En **Connect**, desactivar **Connection pooling** y copiar la cadena **directa**: el host **no** lleva `-pooler`. Tiene que terminar en `?sslmode=require`. Las migraciones necesitan la conexión directa, y con un único servidor de 5 conexiones no hace falta el pooler.
 3. Ese valor es `DATABASE_URL`.
 
-En el plan Free, la base se suspende tras unos minutos sin uso, así que la primera visita después de un rato tarda un poco más. Los backups (restauración a un punto en el tiempo) se configuran en **Branches**; probarlos es parte del Paso 11.
+En el plan Free, la base se suspende tras unos minutos sin uso, así que la primera visita después de un rato tarda un poco más. Por eso el health check de Render no la consulta. Los backups (restauración a un punto en el tiempo) se configuran en **Branches**; probarlos es parte del Paso 11.
 
 ## 2. Bunny Storage y CDN
 
@@ -63,8 +63,9 @@ Con un token inválido, el embed de Bunny responde igual HTTP 200, pero con una 
 1. **New → Blueprint**, elegir el repo `galeria-nightdaro`. Render lee `render.yaml` y pide los valores marcados `sync: false`: los de los pasos 1 a 4.
 2. Lo que hace cada deploy:
    - **Build:** `corepack enable && pnpm install --frozen-lockfile && pnpm build`. Corepack instala el pnpm de `package.json#packageManager`, y Node es la versión de `.node-version` (22).
-   - **Pre-deploy:** `pnpm db:migrate`, que aplica las migraciones contra Neon antes de cambiar de versión.
-   - **Start:** `pnpm start`. Render da por sano el servicio cuando `GET /api/health` responde 200, que incluye un `select 1` a la base.
+   - **Pre-deploy:** `node_modules/.bin/drizzle-kit migrate`, que es lo mismo que `pnpm db:migrate`: aplica las migraciones contra Neon antes de cambiar de versión.
+   - **Start:** `node_modules/.bin/next start`, que es lo mismo que `pnpm start`. Usar los binarios ya instalados evita que el arranque dependa de bajar pnpm.
+   - **Health check:** Render da por sano el servicio cuando `GET /api/health` responde 200. No consulta la base a propósito: así Neon puede suspenderse cuando no hay visitas, y un corte de la base no reinicia la app. Para comprobar la base a mano, `GET /api/health?db=1`.
 3. **Auto-deploy:** `autoDeployTrigger: checksPass` despliega `main` solo cuando el CI de GitHub está en verde.
 4. **Seed inicial** (una sola vez): desde el **Shell** del servicio,
 
@@ -101,6 +102,8 @@ Si el build falla porque Render instala las dependencias por su cuenta con otra 
 2. `https://nightdaro.com` redirige a `https://www.nightdaro.com`, con candado válido.
 3. La portada muestra la puerta +18. En `/apoyar` aparecen los tres tiers del seed, y cada botón pasa por `/r/patreon-…` hasta Patreon.
 4. Entrar en `/login` con un admin del seed.
-5. **IP del visitante:** con la sesión iniciada, abrir `https://www.nightdaro.com/api/admin/ip-check`. `resolved` tiene que ser **tu IP pública** (comparala con cualquier sitio tipo "cuál es mi IP"). Si muestra una IP de Render o de Cloudflare, el rate limit del login y los visitantes únicos quedarían mal. Probá `CLIENT_IP_HEADER=true-client-ip` y volvé a mirar.
+5. **IP del visitante:** con la sesión iniciada, abrir `https://www.nightdaro.com/api/admin/ip-check`.
+   - `resolved` tiene que ser **tu IP pública** (comparala con cualquier sitio tipo "cuál es mi IP"). Si muestra una IP de Render o de Cloudflare, el rate limit del login y los visitantes únicos quedarían mal: probá `CLIENT_IP_HEADER=true-client-ip` y volvé a mirar.
+   - Además, comprobá que **no se puede falsear**: copiá la cookie de sesión del navegador (`__Secure-authjs.session-token`) y corré `curl -s -H "CF-Connecting-IP: 1.2.3.4" -H "Cookie: __Secure-authjs.session-token=…" https://www.nightdaro.com/api/admin/ip-check`. `resolved` **no** puede ser `1.2.3.4`. Si lo es, el header no lo pisa Cloudflare y cualquiera podría saltear el rate limit: borrá `CLIENT_IP_HEADER` y avisá.
 6. Subir una imagen de prueba desde `/admin/subir`: tienen que aparecer `original.*` en `nightdaro-originals` y `thumb.webp` y `preview.webp` en `nightdaro-public`. La miniatura se ve en Galería, y la URL de la imagen vence en 1 hora.
 7. Un error forzado aparece en Sentry, sin IP ni cookies.

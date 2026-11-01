@@ -10,11 +10,21 @@ import { isIP } from "node:net";
  * Check what a deploy receives with GET /api/admin/ip-check.
  */
 export function clientIp(headers: Headers): string {
-  const trustedHeader = process.env.CLIENT_IP_HEADER;
-  const trusted = trustedHeader ? headers.get(trustedHeader)?.trim() : undefined;
+  const trusted = trustedHeaderValue(headers);
   if (trusted && isIP(trusted)) return trusted;
 
   const forwarded = headers.get("x-forwarded-for");
   const last = forwarded?.split(",").at(-1)?.trim();
   return last || headers.get("x-real-ip") || "unknown";
+}
+
+function trustedHeaderValue(headers: Headers): string | undefined {
+  const name = process.env.CLIENT_IP_HEADER;
+  if (!name) return undefined;
+  try {
+    return headers.get(name)?.trim();
+  } catch {
+    // A misconfigured header name must not take every rate-limited route down.
+    return undefined;
+  }
 }
