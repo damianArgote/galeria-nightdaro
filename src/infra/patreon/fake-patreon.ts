@@ -82,6 +82,17 @@ export class FakePatreonPort implements PatreonPort {
     return structuredClone(this.members);
   }
 
+  async getMember(accessToken: string, memberId: string): Promise<PatreonMember | null> {
+    this.calls.push(`member:${accessToken}:${memberId}`);
+    const member = this.members.find((m) => m.id === memberId);
+    return member ? structuredClone(member) : null;
+  }
+
+  async listWebhooks(accessToken: string) {
+    this.calls.push(`webhook:list:${accessToken}`);
+    return [...this.webhooks].map(([id, { uri }]) => ({ id, uri }));
+  }
+
   async createWebhook(
     accessToken: string,
     { uri, triggers }: { campaignId: string; uri: string; triggers: readonly PatreonTrigger[] },
@@ -120,6 +131,10 @@ export class FakePatreonConnectionRepository implements PatreonConnectionReposit
 
   async delete() {
     this.connection = null;
+  }
+
+  async webhookSecret() {
+    return this.connection?.webhook?.secret ?? null;
   }
 }
 

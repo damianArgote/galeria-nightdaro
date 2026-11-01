@@ -54,6 +54,14 @@ export class DrizzlePatreonConnectionRepository implements PatreonConnectionRepo
       .onConflictDoUpdate({ target: patreonConnection.id, set: values });
   }
 
+  async webhookSecret(): Promise<string | null> {
+    const [row] = await this.db
+      .select({ secret: patreonConnection.webhookSecret })
+      .from(patreonConnection)
+      .where(eq(patreonConnection.id, ROW));
+    return row?.secret ? this.cipher.decrypt(row.secret) : null;
+  }
+
   async delete(): Promise<void> {
     await this.db.delete(patreonConnection).where(eq(patreonConnection.id, ROW));
   }

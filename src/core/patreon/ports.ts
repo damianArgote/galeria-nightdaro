@@ -17,6 +17,9 @@ export interface PatreonPort {
   refresh(refreshToken: string): Promise<PatreonTokens>;
   getCampaign(accessToken: string): Promise<PatreonCampaign>;
   listMembers(accessToken: string, campaignId: string): Promise<PatreonMember[]>;
+  /** Current state of one member; null when Patreon no longer has it. */
+  getMember(accessToken: string, memberId: string): Promise<PatreonMember | null>;
+  listWebhooks(accessToken: string): Promise<{ id: string; uri: string }[]>;
   createWebhook(
     accessToken: string,
     input: { campaignId: string; uri: string; triggers: readonly PatreonTrigger[] },
@@ -29,6 +32,8 @@ export interface PatreonConnectionRepository {
   get(): Promise<PatreonConnection | null>;
   save(connection: PatreonConnection): Promise<void>;
   delete(): Promise<void>;
+  /** Only the webhook secret, for the webhook route: nothing else is decrypted per request. */
+  webhookSecret(): Promise<string | null>;
 }
 
 /** Daro's Patreon tiers as last read from Patreon (names and prices for the panel). */

@@ -15,14 +15,24 @@ const MAX_BODY_BYTES = 1_000_000;
  */
 export async function POST(request: Request) {
   const patreon = container.patreon;
-  const secret = patreon && (await patreon.webhookSecret());
-  if (!patreon || !secret) return new Response("Not found", { status: 404 });
+  if (!patreon) return new Response("Not found", { status: 404 });
+  let secret: string | null;
+  try {
+    secret = await patreon.webhookSecret();
+  } catch (error) {
+    // Unreadable secret (database down, PATREON_TOKEN_KEY changed): Patreon retries later.
+    console.error("Could not read the Patreon webhook secret", error);
+    return new Response("Unavailable", { status: 503 });
+  }
+  if (!secret) return new Response("Not found", { status: 404 });
 
   if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
     return new Response("Too large", { status: 413 });
   }
   const raw = await request.text();
-  if (raw.length > MAX_BODY_BYTES) return new Response("Too large", { status: 413 });
+  if (Buffer.byteLength(raw, "utf8") > MAX_BODY_BYTES) {
+    return new Response("Too large", { status: 413 });
+  }
   if (!verifyPatreonSignature(raw, request.headers.get("x-patreon-signature"), secret)) {
     return new Response("Invalid signature", { status: 401 });
   }

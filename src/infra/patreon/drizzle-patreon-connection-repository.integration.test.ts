@@ -48,8 +48,12 @@ describe.skipIf(!databaseUrl)("Patreon connection against Postgres", () => {
     )) as unknown as [{ count: number }];
     expect(count).toBe(1);
 
+    await repository.save(connection);
+    expect(await repository.webhookSecret()).toBe("webhook-secret-value");
+
     await repository.delete();
     expect(await repository.get()).toBeNull();
+    expect(await repository.webhookSecret()).toBeNull();
   });
 
   it("never stores tokens or the webhook secret in clear", async () => {

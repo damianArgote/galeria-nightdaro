@@ -117,6 +117,27 @@ describe("SetUpPatreonCampaign", () => {
     expect((await connections.get())?.webhook).toEqual({ id: "wh-1", secret: "secret-wh-1" });
   });
 
+  it("deletes a leftover webhook pointing at our URL before creating the new one", async () => {
+    await patreon.createWebhook("at", {
+      campaignId: "camp-1",
+      uri: WEBHOOK_URI,
+      triggers: ["posts:publish"],
+    });
+    await patreon.createWebhook("at", {
+      campaignId: "camp-1",
+      uri: "https://elsewhere.example/hook",
+      triggers: ["posts:publish"],
+    });
+
+    await setUp().execute();
+
+    expect([...patreon.webhooks.values()].map((w) => w.uri).sort()).toEqual([
+      "https://elsewhere.example/hook",
+      WEBHOOK_URI,
+    ]);
+    expect(patreon.webhooks.has("wh-1")).toBe(false);
+  });
+
   it("replaces the members with Patreon's current list", async () => {
     await members.save({
       id: "stale",
@@ -135,6 +156,15 @@ describe("SetUpPatreonCampaign", () => {
   });
 });
 
+const pledge = (events: FakePatreonEventRepository) =>
+  new RecordPatreonPledge({
+    patreon,
+    access: new PatreonAccess(patreon, connections, () => NOW),
+    members,
+    events,
+    clock: () => NOW,
+  });
+
 describe("RecordPatreonPledge", () => {
   const member = {
     id: "m1",
@@ -145,8 +175,9 @@ describe("RecordPatreonPledge", () => {
   };
 
   it("records the event with its kind and updates the member", async () => {
+    patreon.members = [member];
     const events = new FakePatreonEventRepository();
-    const record = new RecordPatreonPledge(members, events, () => NOW);
+    const record = pledge(events);
 
     await record.execute({ trigger: "members:pledge:create", key: "k1", member });
 
@@ -164,8 +195,9 @@ describe("RecordPatreonPledge", () => {
   });
 
   it("ignores a retried delivery and maps update and delete", async () => {
+    patreon.members = [{ ...member, status: "former_patron", amountCents: 0, tierIds: [] }];
     const events = new FakePatreonEventRepository();
-    const record = new RecordPatreonPledge(members, events, () => NOW);
+    const record = pledge(events);
 
     await record.execute({ trigger: "members:pledge:create", key: "k1", member });
     await record.execute({ trigger: "members:pledge:create", key: "k1", member });
@@ -180,8 +212,60 @@ describe("RecordPatreonPledge", () => {
     expect((await members.list())[0]).toMatchObject({ status: "former_patron", amountCents: 0 });
   });
 
+  it("stores Patreon's current state, so a late retried alta does not revive a former patron", async () => {
+    patreon.members = [{ ...member, status: "former_patron", amountCents: 0, tierIds: [] }];
+    const events = new FakePatreonEventRepository();
+
+    await pledge(events).execute({ trigger: "members:pledge:create", key: "late", member });
+
+    expect((await members.list())[0]).toMatchObject({ status: "former_patron" });
+    expect(events.events.map((e) => e.kind)).toEqual(["alta"]);
+  });
+
+  it("marks a member Patreon no longer has as former, and falls back to the payload when Patreon fails", async () => {
+    patreon.members = [];
+    await pledge(new FakePatreonEventRepository()).execute({
+      trigger: "members:pledge:delete",
+      key: "gone",
+      member,
+    });
+    expect((await members.list())[0]).toMatchObject({
+      status: "former_patron",
+      amountCents: 0,
+      tierIds: [],
+    });
+
+    patreon.getMember = async () => {
+      throw new Error("Patreon is down");
+    };
+    await pledge(new FakePatreonEventRepository()).execute({
+      trigger: "members:pledge:create",
+      key: "down",
+      member,
+    });
+    expect((await members.list())[0]).toEqual(member);
+  });
+
+  it("saves the member before the event, so a failed save is retried by Patreon", async () => {
+    patreon.members = [member];
+    const events = new FakePatreonEventRepository();
+    const realSave = members.save.bind(members);
+    members.save = async () => {
+      throw new Error("db down");
+    };
+    await expect(
+      pledge(events).execute({ trigger: "members:pledge:create", key: "k", member }),
+    ).rejects.toThrow();
+    expect(events.events).toEqual([]);
+
+    members.save = realSave;
+    await pledge(events).execute({ trigger: "members:pledge:create", key: "k", member });
+    expect(events.events).toHaveLength(1);
+    expect(await members.list()).toEqual([member]);
+  });
+
   it("rejects a trigger that is not a pledge", async () => {
-    const record = new RecordPatreonPledge(members, new FakePatreonEventRepository(), () => NOW);
+    const record = pledge(new FakePatreonEventRepository());
     await expect(record.execute({ trigger: "posts:publish", key: "k", member })).rejects.toThrow(
       /pledge/,
     );

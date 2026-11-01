@@ -124,11 +124,14 @@ function patreon() {
       tiers: tiers(),
       webhookUri: setup.webhookUri,
     }),
-    recordPledge: new RecordPatreonPledge(members, new DrizzlePatreonEventRepository(getDb())),
+    recordPledge: new RecordPatreonPledge({
+      patreon: setup.port,
+      access: new PatreonAccess(setup.port, connections),
+      members,
+      events: new DrizzlePatreonEventRepository(getDb()),
+    }),
     /** The secret Patreon signs webhooks with; null until the webhook exists. */
-    async webhookSecret(): Promise<string | null> {
-      return (await connections.get())?.webhook?.secret ?? null;
-    },
+    webhookSecret: () => connections.webhookSecret(),
     disconnect: new DisconnectPatreon(setup.port, connections),
     status: new GetPatreonStatus(connections),
   };

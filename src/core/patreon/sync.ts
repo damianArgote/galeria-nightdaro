@@ -78,6 +78,10 @@ export class SetUpPatreonCampaign {
     for (const tier of changed.filter((t) => t.patreonTierId !== null)) await tiers.save(tier);
 
     if (!connection.webhook) {
+      // A webhook left by an earlier failed set-up would keep posting with a secret we lost.
+      for (const old of await patreon.listWebhooks(token)) {
+        if (old.uri === webhookUri) await patreon.deleteWebhook(token, old.id);
+      }
       const webhook = await patreon.createWebhook(token, {
         campaignId: connection.campaignId,
         uri: webhookUri,
@@ -91,25 +95,49 @@ export class SetUpPatreonCampaign {
   }
 }
 
-/** A verified pledge webhook: one event for the Resumen and the member's new state. */
+/**
+ * A verified pledge webhook: the member's current state and one event for the Resumen.
+ * Deliveries can arrive late or out of order (retries), so the member is read back from
+ * Patreon instead of trusting the payload; the payload is only the fallback when Patreon fails.
+ * The member is saved before the event: if the save fails, Patreon's retry is not deduplicated.
+ */
 export class RecordPatreonPledge {
   constructor(
-    private readonly members: PatreonMemberRepository,
-    private readonly events: PatreonEventRepository,
-    private readonly clock: Clock = systemClock,
+    private readonly deps: {
+      patreon: PatreonPort;
+      access: PatreonAccess;
+      members: PatreonMemberRepository;
+      events: PatreonEventRepository;
+      clock?: Clock;
+    },
   ) {}
 
   async execute(input: { trigger: string; key: string; member: PatreonMember }): Promise<void> {
     const kind = PLEDGE_EVENT_KINDS[input.trigger];
     if (!kind) throw new Error(`Not a pledge trigger: ${input.trigger}`);
-    const recorded = await this.events.recordOnce({
+    const { patreon, access, members, events, clock = systemClock } = this.deps;
+
+    let current: PatreonMember = input.member;
+    try {
+      const fetched = await patreon.getMember(await access.token(), input.member.id);
+      current = fetched ?? {
+        ...input.member,
+        status: "former_patron",
+        amountCents: 0,
+        tierIds: [],
+      };
+    } catch (error) {
+      console.error("Could not read the Patreon member; using the webhook payload", error);
+    }
+    await members.save(current);
+
+    await events.recordOnce({
       key: input.key,
       kind,
       memberId: input.member.id,
       amountCents: input.member.amountCents,
       patreonTierId: input.member.tierIds[0] ?? null,
-      occurredAt: this.clock(),
+      occurredAt: clock(),
     });
-    if (recorded) await this.members.save(input.member);
   }
 }
