@@ -21,9 +21,29 @@ function serverActionFiles(dir: string): string[] {
   });
 }
 
-function exportedActions(file: string) {
-  const source = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest);
-  const actions: { name: string; guarded: boolean }[] = [];
+/** True when the action has no input, or hands its first parameter to runAction(schema, input). */
+function validatesInput(action: ts.FunctionDeclaration, source: ts.SourceFile): boolean {
+  const input = action.parameters[0];
+  if (!input) return true;
+  const name = input.name.getText(source);
+  let found = false;
+  const visit = (node: ts.Node) => {
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.getText(source) === "runAction" &&
+      node.arguments[1]?.getText(source) === name
+    ) {
+      found = true;
+    }
+    ts.forEachChild(node, visit);
+  };
+  if (action.body) visit(action.body);
+  return found;
+}
+
+function exportedActions(file: string, text = readFileSync(file, "utf8")) {
+  const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true);
+  const actions: { name: string; guarded: boolean; validated: boolean }[] = [];
   for (const statement of source.statements) {
     const exported = ts
       .getModifiers(statement as ts.HasModifiers)
@@ -31,7 +51,11 @@ function exportedActions(file: string) {
     if (!exported) continue;
     if (!ts.isFunctionDeclaration(statement) || !statement.name) {
       // Anything else exported from a "use server" file could bypass the check.
-      actions.push({ name: statement.getText(source).slice(0, 40), guarded: false });
+      actions.push({
+        name: statement.getText(source).slice(0, 40),
+        guarded: false,
+        validated: false,
+      });
       continue;
     }
     const first = statement.body?.statements[0];
@@ -41,7 +65,11 @@ function exportedActions(file: string) {
       ts.isAwaitExpression(first.expression) &&
       ts.isCallExpression(first.expression.expression) &&
       first.expression.expression.expression.getText(source) === "requireAdmin";
-    actions.push({ name: statement.name.text, guarded });
+    actions.push({
+      name: statement.name.text,
+      guarded,
+      validated: validatesInput(statement, source),
+    });
   }
   return actions;
 }
@@ -105,5 +133,35 @@ describe("admin Server Actions", () => {
         .map((a) => `${file}#${a.name}`),
     );
     expect(unguarded).toEqual([]);
+  });
+
+  it("validate their input with Zod through runAction(schema, input)", () => {
+    const unvalidated = files.flatMap((file) =>
+      exportedActions(file)
+        .filter((a) => !a.validated)
+        .map((a) => `${file}#${a.name}`),
+    );
+    expect(unvalidated).toEqual([]);
+  });
+
+  it("the validation check catches an action that skips runAction", () => {
+    const [skipped, validated, noInput] = exportedActions(
+      "fixture.ts",
+      `"use server";
+      export async function skips(input: unknown) {
+        await requireAdmin();
+        return container.deleteArtwork.execute(input as never);
+      }
+      export async function validates(input: unknown) {
+        await requireAdmin();
+        return runAction(schema, input, (data) => container.deleteArtwork.execute(data));
+      }
+      export async function noInput() {
+        await requireAdmin();
+      }`,
+    );
+    expect(skipped).toMatchObject({ name: "skips", validated: false });
+    expect(validated).toMatchObject({ name: "validates", validated: true });
+    expect(noInput).toMatchObject({ name: "noInput", validated: true });
   });
 });
