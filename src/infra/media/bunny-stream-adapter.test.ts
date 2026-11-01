@@ -1,3 +1,4 @@
+import { bunnyToken } from "./bunny-token";
 import { describe, expect, it, vi } from "vitest";
 import {
   BunnyStreamAdapter,
@@ -73,6 +74,62 @@ describe("BunnyStreamAdapter", () => {
     });
 
     await expect(stream.getStatus("v")).resolves.toBe(expected);
+  });
+
+  it("downloads the thumbnail Bunny picked, from the library CDN, with the site as Referer", async () => {
+    const calls: { url: string; headers: Headers }[] = [];
+    const stream = new BunnyStreamAdapter({
+      libraryId: "1",
+      apiKey: "k",
+      tokenKey: "t",
+      cdnHost: "vz-77616ae2-920.b-cdn.net",
+      referer: "https://www.nightdaro.com/",
+      fetch: async (input, init) => {
+        calls.push({ url: String(input), headers: new Headers(init?.headers) });
+        return calls.length === 1
+          ? json({ status: 4, thumbnailFileName: "thumbnail_2.jpg" })
+          : new Response(new Uint8Array([0xff, 0xd8, 0xff]), { status: 200 });
+      },
+    });
+
+    await expect(stream.thumbnail("v-1")).resolves.toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+    const cdn = new URL(calls[1]!.url);
+    expect(cdn.origin + cdn.pathname).toBe("https://vz-77616ae2-920.b-cdn.net/v-1/thumbnail_2.jpg");
+    // CDN token authentication: HS256 with the library's token key, valid for a few minutes.
+    const expires = Number(cdn.searchParams.get("expires"));
+    expect(cdn.searchParams.get("token")).toBe(bunnyToken("t", "/v-1/thumbnail_2.jpg", expires));
+    expect(expires - Date.now() / 1000).toBeGreaterThan(60);
+    expect(calls[1]!.headers.get("referer")).toBe("https://www.nightdaro.com/");
+    expect(calls[1]!.headers.get("accesskey")).toBeNull();
+  });
+
+  it("has no thumbnail without a CDN host, when the CDN refuses, or with an odd file name", async () => {
+    const noHost = new BunnyStreamAdapter({
+      libraryId: "1",
+      apiKey: "k",
+      tokenKey: "t",
+      fetch: async () => {
+        throw new Error("must not be called");
+      },
+    });
+    await expect(noHost.thumbnail("v")).resolves.toBeNull();
+
+    const responses = (cdn: Response, fileName = "thumbnail.jpg") =>
+      new BunnyStreamAdapter({
+        libraryId: "1",
+        apiKey: "k",
+        tokenKey: "t",
+        cdnHost: "vz-x.b-cdn.net",
+        referer: "https://www.nightdaro.com/",
+        fetch: async (input) =>
+          String(input).includes("video.bunnycdn.com")
+            ? json({ thumbnailFileName: fileName })
+            : cdn,
+      });
+    await expect(responses(new Response(null, { status: 403 })).thumbnail("v")).resolves.toBeNull();
+    await expect(
+      responses(new Response(new Uint8Array([1])), "../../etc/passwd").thumbnail("v"),
+    ).resolves.toBeNull();
   });
 
   it("treats a response without status as processing", async () => {

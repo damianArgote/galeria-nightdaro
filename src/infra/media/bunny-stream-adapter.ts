@@ -1,3 +1,4 @@
+import { signBunnyUrl } from "./bunny-token";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { VideoPort, VideoStatus, VideoUploadAuthorization } from "@/core/media/ports";
 
@@ -34,6 +35,9 @@ export function verifyStreamWebhook(
   return timingSafeEqual(expected, Buffer.from(signature.toLowerCase(), "hex"));
 }
 
+const THUMBNAIL_FILE = /^[\w.-]{1,100}\.(jpe?g|png|webp)$/i;
+const MAX_THUMBNAIL_BYTES = 10 * 1024 * 1024;
+
 export class BunnyStreamAdapter implements VideoPort {
   constructor(
     private readonly config: {
@@ -41,6 +45,10 @@ export class BunnyStreamAdapter implements VideoPort {
       apiKey: string;
       /** Embed view token authentication key of the library. */
       tokenKey: string;
+      /** The library's CDN hostname (vz-….b-cdn.net), for thumbnails; none means no thumbnails. */
+      cdnHost?: string;
+      /** The site, sent as Referer: the library only serves its allowed domains. */
+      referer?: string;
       fetch?: typeof fetch;
     },
   ) {}
@@ -78,6 +86,29 @@ export class BunnyStreamAdapter implements VideoPort {
     const expires = Math.floor(expiresAt.getTime() / 1000);
     const token = embedToken(this.config.tokenKey, videoId, expires);
     return `${PLAYER}/${this.config.libraryId}/${videoId}?token=${token}&expires=${expires}`;
+  }
+
+  async thumbnail(videoId: string): Promise<Uint8Array | null> {
+    const { cdnHost, referer } = this.config;
+    if (!cdnHost) return null;
+    const response = await this.request("GET", `/${encodeURIComponent(videoId)}`);
+    if (!response.ok) return null;
+    const { thumbnailFileName } = (await response.json()) as { thumbnailFileName?: string };
+    const fileName = thumbnailFileName || "thumbnail.jpg";
+    // Only a plain file name: it goes into a URL on the library's own host.
+    if (!THUMBNAIL_FILE.test(fileName)) return null;
+
+    // Signed with the library's token key: with CDN token authentication on, Bunny requires it,
+    // and without it the extra parameters are ignored.
+    const path = `/${encodeURIComponent(videoId)}/${fileName}`;
+    const expires = Math.floor(Date.now() / 1000) + 300;
+    const image = await (this.config.fetch ?? fetch)(
+      signBunnyUrl(`https://${cdnHost}`, path, this.config.tokenKey, expires),
+      { headers: referer ? { Referer: referer } : {}, signal: AbortSignal.timeout(15_000) },
+    );
+    if (!image.ok) return null;
+    const bytes = new Uint8Array(await image.arrayBuffer());
+    return bytes.byteLength > 0 && bytes.byteLength <= MAX_THUMBNAIL_BYTES ? bytes : null;
   }
 
   async deleteVideo(videoId: string): Promise<void> {

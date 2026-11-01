@@ -63,6 +63,9 @@ services:
         sync: false
       - key: BUNNY_STREAM_READONLY_KEY
         sync: false
+      # CDN hostname of the Stream library (vz-….b-cdn.net): timelapse covers from Bunny's thumbnail.
+      - key: BUNNY_STREAM_CDN_HOST
+        sync: false
       - key: SENTRY_DSN
         sync: false
       # Patreon (Paso 12): the client registered at patreon.com/portal; the token key encrypts

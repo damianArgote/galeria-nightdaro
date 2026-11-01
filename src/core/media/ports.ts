@@ -69,4 +69,6 @@ export interface VideoPort {
   /** HLS player URL, valid until `expiresAt`. */
   playerUrl(videoId: string, expiresAt: Date): string;
   deleteVideo(videoId: string): Promise<void>;
+  /** The frame the video service picked as thumbnail; null when unavailable or not configured. */
+  thumbnail(videoId: string): Promise<Uint8Array | null>;
 }

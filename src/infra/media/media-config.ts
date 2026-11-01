@@ -81,5 +81,13 @@ export function createVideoPort(): VideoPort | null {
   const apiKey = process.env.BUNNY_STREAM_API_KEY;
   const tokenKey = process.env.BUNNY_STREAM_TOKEN_KEY;
   if (!libraryId || !apiKey || !tokenKey) return null;
-  return new BunnyStreamAdapter({ libraryId, apiKey, tokenKey });
+  const cdnHost = process.env.BUNNY_STREAM_CDN_HOST;
+  return new BunnyStreamAdapter({
+    libraryId,
+    apiKey,
+    tokenKey,
+    // A malformed host is ignored rather than used in a URL.
+    cdnHost: cdnHost && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(cdnHost) ? cdnHost : undefined,
+    referer: process.env.SITE_URL ? `${process.env.SITE_URL.replace(/\/$/, "")}/` : undefined,
+  });
 }

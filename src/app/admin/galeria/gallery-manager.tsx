@@ -26,6 +26,7 @@ import { Eye, EyeOff, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { uploadCover } from "../_lib/upload-cover";
 import {
   deleteArtworkAction,
   hideArtworkAction,
@@ -156,6 +157,7 @@ function ArtworkRow({
   });
 
   const hidden = artwork.status === "hidden";
+  const router = useRouter();
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>) {
     setError(undefined);
@@ -236,6 +238,27 @@ function ArtworkRow({
             >
               Ver video
             </a>
+          )}
+          {artwork.kind === "timelapse" && (
+            <label className="cursor-pointer text-brand-sky underline underline-offset-2 has-focus-visible:outline-2">
+              {pending ? "Subiendo portada…" : thumb ? "Cambiar portada" : "Subir portada"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                disabled={pending}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  run(async () => {
+                    const result = await uploadCover(artwork.id, file);
+                    if (result.ok) router.refresh();
+                    return result;
+                  });
+                }}
+              />
+            </label>
           )}
         </div>
       </div>
