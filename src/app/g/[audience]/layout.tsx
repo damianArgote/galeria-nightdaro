@@ -23,7 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
     description: settings.seo.description ?? settings.bio ?? undefined,
     // Adult content labels for parental filters: rating=adult and the RTA label.
     other: { rating: "adult", RATING: "RTA-5042-1996-1400-1577-RTA" },
-    openGraph: { type: "website", siteName: settings.name, title },
+    // public/og.jpg is a 1200 × 630 crop of the banner, sfw like everything crawlers see.
+    openGraph: { type: "website", siteName: settings.name, title, images: "/og.jpg" },
+    twitter: { card: "summary_large_image", images: "/og.jpg" },
   };
 }
 

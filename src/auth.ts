@@ -18,9 +18,11 @@ export const { auth, signIn, signOut } = NextAuth({
         if (!container.loginRateLimiter.consume(clientIp(request.headers))) {
           throw new RateLimitedSignin();
         }
-        const email = typeof credentials.email === "string" ? credentials.email : "";
-        const password = typeof credentials.password === "string" ? credentials.password : "";
-        return container.authenticateAdmin.execute({ email, password });
+        // Validated with Zod inside the use case: anything else than two bounded strings fails.
+        return container.authenticateAdmin.execute({
+          email: credentials.email,
+          password: credentials.password,
+        });
       },
     }),
   ],
