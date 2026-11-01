@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useTransition } from "react";
 import { acceptAgeGate } from "@/app/g/actions";
+import { track } from "./track";
 
 /** Shown to visitors without the age_ok cookie. Accepting switches to the adult variant. */
 export function AgeGate() {
@@ -57,6 +58,7 @@ export function AgeGate() {
             onClick={() =>
               startTransition(async () => {
                 await acceptAgeGate();
+                track({ type: "age_ok" });
                 router.refresh();
               })
             }

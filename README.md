@@ -141,3 +141,11 @@ Prueba en vivo contra la librería configurada (sube un video de 3 s, espera el 
 - **Disuasivos:** las imágenes no se pueden arrastrar, no tienen menú contextual y muestran un placeholder borroso mientras cargan. Solo llevan JS las pestañas, el lightbox y el modal.
 
 Variables opcionales: `SITE_URL` (base de las URLs absolutas del Open Graph y de la cookie `Secure`) y `CONTACT_EMAIL` (contacto en el pie).
+
+## Métricas
+
+- **Vistas y puerta +18:** la galería registra en el navegador las vistas de página, las vistas de obra (lightbox o ficha) y la aceptación de la puerta +18, con `POST /api/events`. Nunca se cuentan al renderizar: las páginas están cacheadas y los bots que no ejecutan JS no suman.
+- **Protecciones de `/api/events`:** ignora crawlers, rechaza otros orígenes y bodies de más de 4 KB, y tiene un rate limit de 60 eventos por minuto por IP.
+- **Clics:** `/r/{código}` registra el clic (salvo de crawlers) y redirige con 302.
+- **Sin IP:** no se guarda ninguna. Cada evento lleva un `session_hash` diario, HMAC-SHA256 de día + IP + user agent con `ANALYTICS_SALT`, que es obligatoria en producción. Además se guardan el país del CDN y solo el host del referrer, que se descarta si es una IP.
+- **Resumen (`/admin`):** visitas, visitantes únicos, aceptación de la puerta y conversión a clic. Suma visitas y clics por día (hora de Buenos Aires), clics por tier y por red, y las obras más vistas, con filtro de fechas.
