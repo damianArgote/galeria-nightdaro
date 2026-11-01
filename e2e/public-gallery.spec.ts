@@ -81,6 +81,31 @@ test.describe("public gallery without the age gate", () => {
     expect(redirect.headers().location).toBe("https://www.patreon.com/cw/Ndaro");
   });
 
+  test("switching gallery tabs keeps the scroll position instead of jumping to the top", async ({
+    page,
+  }) => {
+    await acceptGate(page);
+    const tabs = page.getByRole("navigation", { name: "Tipo de contenido" });
+    await tabs.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -80));
+    const before = await page.evaluate(() => window.scrollY);
+    expect(before).toBeGreaterThan(300);
+
+    for (const [label, path] of [
+      ["En proceso", "/en-proceso"],
+      ["Timelapses", "/timelapses"],
+      ["Terminado", "/"],
+    ] as const) {
+      await tabs.getByRole("link", { name: new RegExp(label) }).click();
+      await expect(page).toHaveURL(new RegExp(`${path.replace("/", "\\/")}$`));
+      await expect(tabs.getByRole("link", { name: new RegExp(label) })).toHaveAttribute(
+        "aria-current",
+        "page",
+      );
+      expect(Math.abs((await page.evaluate(() => window.scrollY)) - before)).toBeLessThan(5);
+    }
+  });
+
   test("pages are served from the ISR cache and set no cookies", async ({ page }) => {
     await page.request.get("/en-proceso");
     const cached = await page.request.get("/en-proceso");
