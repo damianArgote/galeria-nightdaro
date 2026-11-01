@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/auth";
+import { requireAdminPage } from "@/auth";
 import { ARTWORK_KINDS, type ArtworkKind } from "@/core/artworks/artwork";
 import { KIND_LABELS } from "@/components/admin/artwork-labels";
 import { Panel, ViewHeader } from "@/components/admin/panel";
@@ -17,7 +17,7 @@ export default async function GalleryPage({
 }: {
   searchParams: Promise<{ tipo?: string | string[] }>;
 }) {
-  await requireAdmin();
+  await requireAdminPage();
   const kind = parseKind((await searchParams).tipo);
   const artworks = await container.listArtworks.execute({ kind });
   const ids = artworks.map((a) => a.id);

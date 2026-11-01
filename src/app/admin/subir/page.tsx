@@ -1,9 +1,9 @@
-import { requireAdmin } from "@/auth";
+import { requireAdminPage } from "@/auth";
 import { Panel, PanelHeader, ViewHeader } from "@/components/admin/panel";
 import { UploadArtworkForm } from "./upload-artwork-form";
 
 export default async function UploadPage() {
-  await requireAdmin();
+  await requireAdminPage();
 
   return (
     <>
