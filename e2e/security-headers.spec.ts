@@ -47,8 +47,18 @@ test.describe("security headers", () => {
       await page.goto(path, { waitUntil: "commit" });
       await settle(page);
     }
-
     expect(violations).toEqual([]);
+
+    // The timelapse lightbox frames /media/{id}/player, a same-origin route that redirects to
+    // Bunny. The demo data has no Stream video, so the frame is added by hand and only frame-src
+    // matters here (without a video the route lands on a page that refuses to be framed).
+    await page.evaluate(() => {
+      const frame = document.createElement("iframe");
+      frame.src = "/media/00000000-0000-4000-8000-000000000000/player";
+      document.body.append(frame);
+    });
+    await page.waitForTimeout(500);
+    expect(violations.filter((v) => v.includes("frame-src"))).toEqual([]);
     await context.close();
   });
 

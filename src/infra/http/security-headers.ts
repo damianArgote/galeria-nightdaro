@@ -50,7 +50,8 @@ export function contentSecurityPolicy({
     ["img-src", "'self'", "data:", "blob:", cdn],
     ["font-src", "'self'", "data:"],
     ["connect-src", "'self'", STREAM_UPLOAD, sentry],
-    ["frame-src", STREAM_PLAYER],
+    // 'self': the timelapse iframe loads /media/{id}/player, which signs and redirects to Bunny.
+    ["frame-src", "'self'", STREAM_PLAYER],
     ["object-src", "'none'"],
     ["base-uri", "'self'"],
     ["form-action", "'self'"],

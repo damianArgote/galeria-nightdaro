@@ -27,7 +27,8 @@ describe("contentSecurityPolicy", () => {
       "blob:",
       "https://nightdaro-public.b-cdn.net",
     ]);
-    expect(csp["frame-src"]).toEqual(["https://iframe.mediadelivery.net"]);
+    // The timelapse iframe loads /media/{id}/player first (same origin), which redirects to Bunny.
+    expect(csp["frame-src"]).toEqual(["'self'", "https://iframe.mediadelivery.net"]);
     expect(csp["connect-src"]).toEqual([
       "'self'",
       "https://video.bunnycdn.com",
