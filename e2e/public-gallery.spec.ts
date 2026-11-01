@@ -113,6 +113,13 @@ test.describe("public gallery like the mockup", () => {
   test("hero, tab counters, watermark, protection section and blur", async ({ page }) => {
     await acceptGate(page);
 
+    const banner = page.getByRole("img", { name: /^NightDaro · Tinta, pin-up/ });
+    await expect(banner).toHaveAttribute("src", "/banner.jpg");
+    await expect
+      .poll(() => banner.evaluate((img: HTMLImageElement) => img.naturalWidth))
+      .toBe(1600);
+    await expect(banner).toHaveAttribute("draggable", "false");
+
     // The bio comes from /admin/pagina (another spec edits it; the seed default is the mockup text).
     await expect(page.getByTestId("hero-bio")).not.toBeEmpty();
     await expect(page.getByTestId("hero-tags").getByRole("listitem").first()).toBeVisible();
