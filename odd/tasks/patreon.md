@@ -23,15 +23,15 @@ Assumptions (not asked by the user, marked as such):
 
 ## Tasks
 
-| ID  | Specs     | Route         | Status  | Evidence                                                    |
-| --- | --------- | ------------- | ------- | ----------------------------------------------------------- |
-| T1  | S1        | inline        | done    | docs/arquitectura.md updated in T2's commit                 |
-| T2  | S2, S3    | inline        | pending |                                                             |
-| T3  | S4, S5    | inline        | pending |                                                             |
-| T4  | S6        | inline        | pending |                                                             |
-| T5  | S7        | inline        | pending |                                                             |
-| T6  | S8        | inline        | pending |                                                             |
-| T7  | Done when | user + inline | pending | Patreon client registered, Render env vars, real connection |
+| ID  | Specs     | Route         | Status  | Evidence                                                         |
+| --- | --------- | ------------- | ------- | ---------------------------------------------------------------- |
+| T1  | S1        | inline        | done    | docs/arquitectura.md updated in T2's commit                      |
+| T2  | S2, S3    | inline        | done    | 6b051f8: 238 unit + 5 e2e (patreon.spec) green; verifier pending |
+| T3  | S4, S5    | inline        | pending |                                                                  |
+| T4  | S6        | inline        | pending |                                                                  |
+| T5  | S7        | inline        | pending |                                                                  |
+| T6  | S8        | inline        | pending |                                                                  |
+| T7  | Done when | user + inline | pending | Patreon client registered, Render env vars, real connection      |
 
 Route evidence: no Writer trigger — the units depend on each other (T3 needs T2's connection, T4 needs T3's data), so they run inline in order. T2, T3 and T6 touch security (OAuth, token encryption, webhook signature, fetching remote images): high-risk item 2, independent verifier after their checks.
 
@@ -42,4 +42,5 @@ Route evidence: no Writer trigger — the units depend on each other (T3 needs T
 - **L3** (2026-11-01): docs.patreon.com verified. OAuth authorize `https://www.patreon.com/oauth2/authorize`, token `https://www.patreon.com/api/oauth2/token` (refresh tokens are single-use); API rate limit 100 req/min per token; a User-Agent header is required; members paginate with `page[cursor]` and `meta.pagination.cursors.next`. Posts are read-only (no create/update endpoint), and the Post resource has no image attribute; `posts:publish` payload is not documented.
 - **L4** (2026-11-01, user): "y cuando suba una obra cual seria el proceso?" / "me refiero el proceso con patreon" → S7 proposed.
 - **L5** (2026-11-01, user): "si sumalo, entonces no hay forma de que suba una sola 1? si o si tiene que subir en patreon y en la galeria por separado?" → S8 proposed; user: "si".
-- Next: T2.
+- **L6** (2026-11-01): T2 done in 6b051f8. Disconnect deletes the webhook best-effort and forgets the connection even if Patreon fails. A connection sealed with another PATREON_TOKEN_KEY shows as disconnected (reconnect). e2e runs with a configured but unreachable Patreon client (stops at the redirect); the full OAuth exchange is covered by unit tests with the fake port.
+- Next: T3.
