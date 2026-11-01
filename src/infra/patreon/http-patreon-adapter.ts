@@ -62,20 +62,34 @@ const campaignSchema = z.object({
     .default([]),
 });
 
+/** A JSON:API member resource, as the members endpoint and the webhooks send it. */
+export const memberResourceSchema = z.object({
+  id: z.string().min(1).max(100),
+  type: z.literal("member"),
+  attributes: z.object({
+    patron_status: z.enum(PATRON_STATUSES).nullish(),
+    currently_entitled_amount_cents: z.number().int().nullish(),
+    pledge_relationship_start: z.string().nullish(),
+  }),
+  relationships: z
+    .object({ currently_entitled_tiers: z.object({ data: z.array(ref) }).optional() })
+    .optional(),
+});
+
+/** Keeps only what the Resumen needs: Patreon also sends names and emails, never kept. */
+export function toMember(resource: z.infer<typeof memberResourceSchema>): PatreonMember {
+  const start = resource.attributes.pledge_relationship_start;
+  return {
+    id: resource.id,
+    status: resource.attributes.patron_status ?? null,
+    amountCents: resource.attributes.currently_entitled_amount_cents ?? 0,
+    tierIds: resource.relationships?.currently_entitled_tiers?.data.map((t) => t.id) ?? [],
+    pledgeStart: start ? new Date(start) : null,
+  };
+}
+
 const membersSchema = z.object({
-  data: z.array(
-    z.object({
-      id: z.string(),
-      attributes: z.object({
-        patron_status: z.enum(PATRON_STATUSES).nullish(),
-        currently_entitled_amount_cents: z.number().int().nullish(),
-        pledge_relationship_start: z.string().nullish(),
-      }),
-      relationships: z
-        .object({ currently_entitled_tiers: z.object({ data: z.array(ref) }).optional() })
-        .optional(),
-    }),
-  ),
+  data: z.array(memberResourceSchema),
   meta: z
     .object({
       pagination: z
@@ -158,16 +172,7 @@ export class HttpPatreonAdapter implements PatreonPort {
       url.searchParams.set("page[count]", "1000");
       if (cursor) url.searchParams.set("page[cursor]", cursor);
       const body = membersSchema.parse(await this.request(url, { accessToken }));
-      for (const member of body.data) {
-        const start = member.attributes.pledge_relationship_start;
-        members.push({
-          id: member.id,
-          status: member.attributes.patron_status ?? null,
-          amountCents: member.attributes.currently_entitled_amount_cents ?? 0,
-          tierIds: member.relationships?.currently_entitled_tiers?.data.map((t) => t.id) ?? [],
-          pledgeStart: start ? new Date(start) : null,
-        });
-      }
+      members.push(...body.data.map(toMember));
       cursor = body.meta?.pagination?.cursors?.next;
     } while (cursor);
     return members;

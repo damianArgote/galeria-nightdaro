@@ -32,7 +32,7 @@ export async function createTestDb(name: string) {
 
   async function reset() {
     await db.execute(
-      sql`truncate events, tracking_links, tiers, site_settings, media_assets, artworks, users, patreon_connection cascade`,
+      sql`truncate events, tracking_links, tiers, site_settings, media_assets, artworks, users, patreon_connection, patreon_tiers, patreon_members, patreon_events cascade`,
     );
   }
 

@@ -1,5 +1,7 @@
 import type {
   PatreonCampaign,
+  PatreonEvent,
+  PatreonTier,
   PatreonConnection,
   PatreonMember,
   PatreonTokens,
@@ -27,4 +29,23 @@ export interface PatreonConnectionRepository {
   get(): Promise<PatreonConnection | null>;
   save(connection: PatreonConnection): Promise<void>;
   delete(): Promise<void>;
+}
+
+/** Daro's Patreon tiers as last read from Patreon (names and prices for the panel). */
+export interface PatreonTierCatalog {
+  list(): Promise<PatreonTier[]>;
+  replace(tiers: PatreonTier[]): Promise<void>;
+}
+
+/** Current state of each member: no name, no email. */
+export interface PatreonMemberRepository {
+  list(): Promise<PatreonMember[]>;
+  save(member: PatreonMember): Promise<void>;
+  /** Initial sync: the given members become the whole table. */
+  replaceAll(members: PatreonMember[]): Promise<void>;
+}
+
+export interface PatreonEventRepository {
+  /** False when an event with the same key was already recorded (a retried delivery). */
+  recordOnce(event: PatreonEvent): Promise<boolean>;
 }

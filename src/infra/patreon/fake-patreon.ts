@@ -1,12 +1,20 @@
 import type {
   PatreonCampaign,
   PatreonConnection,
+  PatreonEvent,
+  PatreonTier,
   PatreonMember,
   PatreonTokens,
   PatreonTrigger,
   PatreonWebhook,
 } from "@/core/patreon/patreon";
-import type { PatreonConnectionRepository, PatreonPort } from "@/core/patreon/ports";
+import type {
+  PatreonConnectionRepository,
+  PatreonEventRepository,
+  PatreonMemberRepository,
+  PatreonPort,
+  PatreonTierCatalog,
+} from "@/core/patreon/ports";
 
 /** In-memory Patreon for tests and the e2e suite: records every call it receives. */
 export class FakePatreonPort implements PatreonPort {
@@ -112,5 +120,38 @@ export class FakePatreonConnectionRepository implements PatreonConnectionReposit
 
   async delete() {
     this.connection = null;
+  }
+}
+
+export class FakePatreonTierCatalog implements PatreonTierCatalog {
+  tiers: PatreonTier[] = [];
+  async list() {
+    return structuredClone(this.tiers);
+  }
+  async replace(tiers: PatreonTier[]) {
+    this.tiers = structuredClone(tiers);
+  }
+}
+
+export class FakePatreonMemberRepository implements PatreonMemberRepository {
+  readonly items = new Map<string, PatreonMember>();
+  async list() {
+    return [...this.items.values()].map((m) => structuredClone(m));
+  }
+  async save(member: PatreonMember) {
+    this.items.set(member.id, structuredClone(member));
+  }
+  async replaceAll(members: PatreonMember[]) {
+    this.items.clear();
+    for (const member of members) await this.save(member);
+  }
+}
+
+export class FakePatreonEventRepository implements PatreonEventRepository {
+  readonly events: PatreonEvent[] = [];
+  async recordOnce(event: PatreonEvent) {
+    if (this.events.some((e) => e.key === event.key)) return false;
+    this.events.push(structuredClone(event));
+    return true;
   }
 }

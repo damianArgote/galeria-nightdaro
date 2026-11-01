@@ -11,6 +11,11 @@ const RESULTS: Record<string, { ok: boolean; message: string }> = {
     message: "La conexión venció o no se inició desde este navegador. Probá de nuevo.",
   },
   error: { ok: false, message: "Patreon no respondió bien. Probá de nuevo en unos minutos." },
+  incompleto: {
+    ok: false,
+    message:
+      "Patreon quedó conectado, pero no se pudieron leer sus tiers o crear el aviso de altas. Tocá Conectar Patreon de nuevo para reintentar.",
+  },
   "sin-configurar": { ok: false, message: "Falta configurar el cliente de Patreon en Render." },
 };
 

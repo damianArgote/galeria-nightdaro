@@ -28,6 +28,7 @@ export const tierFieldsSchema = z.object({
     .max(MAX_BENEFITS, `Hasta ${MAX_BENEFITS} beneficios`)
     .default([]),
   highlighted: z.boolean().default(false),
+  patreonTierId: z.string().trim().min(1).max(64).nullable().default(null),
 });
 
 export const CODE_PATTERN = /^[a-z0-9-]{3,32}$/;

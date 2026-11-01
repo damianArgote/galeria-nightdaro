@@ -60,3 +60,23 @@ export interface PatreonConnection {
   webhook: PatreonWebhook | null;
   connectedAt: Date;
 }
+
+/** What a pledge webhook means for the Resumen. */
+export const PATREON_EVENT_KINDS = ["alta", "baja", "cambio"] as const;
+export type PatreonEventKind = (typeof PATREON_EVENT_KINDS)[number];
+
+export const PLEDGE_EVENT_KINDS: Record<string, PatreonEventKind> = {
+  "members:pledge:create": "alta",
+  "members:pledge:update": "cambio",
+  "members:pledge:delete": "baja",
+};
+
+export interface PatreonEvent {
+  /** Hash of the trigger and the raw body: Patreon retries deliver the same event again. */
+  key: string;
+  kind: PatreonEventKind;
+  memberId: string;
+  amountCents: number;
+  patreonTierId: string | null;
+  occurredAt: Date;
+}
