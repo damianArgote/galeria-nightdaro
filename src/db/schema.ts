@@ -148,3 +148,23 @@ export const events = pgTable(
     index("events_link_id_idx").on(t.linkId),
   ],
 );
+
+/**
+ * The site's single Patreon connection (row id 1). Tokens and the webhook secret are stored
+ * encrypted with AES-256-GCM (src/infra/patreon/token-cipher.ts), never in clear.
+ */
+export const patreonConnection = pgTable(
+  "patreon_connection",
+  {
+    id: integer("id").primaryKey().default(1),
+    campaignId: text("campaign_id").notNull(),
+    campaignUrl: text("campaign_url").notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    webhookId: text("webhook_id"),
+    webhookSecret: text("webhook_secret"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [check("patreon_connection_single_row", sql`${t.id} = 1`)],
+);
