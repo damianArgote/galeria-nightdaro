@@ -15,6 +15,7 @@ La galería se publica cuando todos los puntos están marcados. Cada uno dice d�
 ## Seguridad
 
 - [x] **CSP y headers de seguridad** en todas las respuestas (`src/infra/http/security-headers.ts`). Se comprueba con `curl -sI https://www.nightdaro.com | grep -i content-security-policy`.
+- [ ] **CSP en producción:** con las DevTools abiertas (pestaña Console), las imágenes de la galería cargan y subir un timelapse real no muestra errores de "Content Security Policy". La CSP se arma **en el build** con `BUNNY_CDN_HOST` y `SENTRY_DSN`: si cambia alguna de las dos, hay que redesplegar (no alcanza con reiniciar).
 - [x] **Server Actions:** todas empiezan con `requireAdmin()` y validan con Zod. Lo comprueba `tests/admin-actions-guard.test.ts`, y el login valida en `AuthenticateAdmin`.
 
 ## Contenido

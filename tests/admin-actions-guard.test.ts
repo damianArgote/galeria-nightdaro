@@ -21,24 +21,29 @@ function serverActionFiles(dir: string): string[] {
   });
 }
 
-/** True when the action has no input, or hands its first parameter to runAction(schema, input). */
+/**
+ * True when the action has no input, or hands its first parameter to runAction(schema, input)
+ * and uses it nowhere else: the raw input never reaches anything but the schema.
+ */
 function validatesInput(action: ts.FunctionDeclaration, source: ts.SourceFile): boolean {
   const input = action.parameters[0];
   if (!input) return true;
   const name = input.name.getText(source);
-  let found = false;
+  let validated = 0;
+  let references = 0;
   const visit = (node: ts.Node) => {
+    if (ts.isIdentifier(node) && node.text === name) references++;
     if (
       ts.isCallExpression(node) &&
       node.expression.getText(source) === "runAction" &&
       node.arguments[1]?.getText(source) === name
     ) {
-      found = true;
+      validated++;
     }
     ts.forEachChild(node, visit);
   };
   if (action.body) visit(action.body);
-  return found;
+  return validated === 1 && references === 1;
 }
 
 function exportedActions(file: string, text = readFileSync(file, "utf8")) {
@@ -145,7 +150,7 @@ describe("admin Server Actions", () => {
   });
 
   it("the validation check catches an action that skips runAction", () => {
-    const [skipped, validated, noInput] = exportedActions(
+    const [skipped, validated, noInput, rawToo] = exportedActions(
       "fixture.ts",
       `"use server";
       export async function skips(input: unknown) {
@@ -158,10 +163,16 @@ describe("admin Server Actions", () => {
       }
       export async function noInput() {
         await requireAdmin();
+      }
+      export async function rawToo(input: unknown) {
+        await requireAdmin();
+        await container.deleteArtwork.execute(input as never);
+        return runAction(schema, input, async () => {});
       }`,
     );
     expect(skipped).toMatchObject({ name: "skips", validated: false });
     expect(validated).toMatchObject({ name: "validates", validated: true });
     expect(noInput).toMatchObject({ name: "noInput", validated: true });
+    expect(rawToo).toMatchObject({ name: "rawToo", validated: false });
   });
 });
