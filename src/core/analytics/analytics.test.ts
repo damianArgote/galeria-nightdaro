@@ -120,7 +120,7 @@ describe("RecordClick", () => {
       "https://www.patreon.com/cw/Ndaro",
     );
 
-    expect(events.recorded).toEqual([
+    expect(events.recorded.map(({ occurredAt: _at, ...e }) => e)).toEqual([
       {
         type: "click",
         artworkId: null,
@@ -130,6 +130,28 @@ describe("RecordClick", () => {
         country: "AR",
       },
     ]);
+  });
+});
+
+describe("RecordClick dedup", () => {
+  it("counts the same visitor's clicks on a link once every 30 seconds", async () => {
+    const links = new FakeTrackingLinkRepository();
+    await new CreateTrackingLink(links, new FakeTierRepository()).execute({
+      label: "Patreon",
+      code: "patreon-1",
+      targetUrl: "https://www.patreon.com/cw/Ndaro",
+    });
+    let now = new Date("2026-11-01T12:00:00.000Z");
+    const click = new RecordClick(events, links, () => now);
+
+    await click.execute({ code: "patreon-1" }, visitor);
+    now = new Date("2026-11-01T12:00:29.000Z");
+    await click.execute({ code: "patreon-1" }, visitor);
+    await click.execute({ code: "patreon-1" }, { ...visitor, sessionHash: "b".repeat(32) });
+    now = new Date("2026-11-01T12:00:31.000Z");
+    await click.execute({ code: "patreon-1" }, visitor);
+
+    expect(events.recorded.map((e) => e.sessionHash[0])).toEqual(["a", "b", "a"]);
   });
 });
 

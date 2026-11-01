@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import type { AnalyticsEvent } from "@/core/analytics/analytics-event";
 import type { DateRange, SummaryCounts } from "@/core/analytics/analytics-summary";
 import type { EventRepository } from "@/core/analytics/ports";
@@ -13,8 +13,24 @@ const n = (value: unknown) => Number(value ?? 0);
 export class DrizzleEventRepository implements EventRepository {
   constructor(private readonly db: Db) {}
 
-  async record(event: AnalyticsEvent): Promise<void> {
-    await this.db.insert(events).values(event);
+  async record({ occurredAt, ...event }: AnalyticsEvent): Promise<void> {
+    await this.db.insert(events).values({ ...event, ...(occurredAt && { createdAt: occurredAt }) });
+  }
+
+  async hasClickSince(sessionHash: string, linkId: string, since: Date): Promise<boolean> {
+    const [row] = await this.db
+      .select({ id: events.id })
+      .from(events)
+      .where(
+        and(
+          eq(events.type, "click"),
+          eq(events.sessionHash, sessionHash),
+          eq(events.linkId, linkId),
+          gte(events.createdAt, since),
+        ),
+      )
+      .limit(1);
+    return !!row;
   }
 
   async summarize({ from, to }: DateRange, topArtworks: number): Promise<SummaryCounts> {

@@ -62,7 +62,8 @@ describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
     const record = new RecordClientEvent(repo, artworks);
     const click = new RecordClick(repo, links);
 
-    // Visitor A: two page views, one artwork view, accepts the gate, clicks the tier twice.
+    // Visitor A: two page views, one artwork view, accepts the gate, clicks the tier twice
+    // in a row (counted once: same session, same link, within 30 s).
     await record.execute({ type: "view", referrer: "https://x.com/post" }, a);
     await record.execute({ type: "view" }, a);
     await record.execute({ type: "view", artworkId: obra.id }, a);
@@ -94,17 +95,17 @@ describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
       visits: 3,
       uniqueVisitors: 2,
       ageGateSessions: 1,
-      clicks: 3,
+      clicks: 2,
       clickingSessions: 2,
       ageGateRate: 0.5,
       conversion: 1,
-      clicksByTier: [{ name: "Tinta", platform: "patreon", clicks: 2 }],
+      clicksByTier: [{ name: "Tinta", platform: "patreon", clicks: 1 }],
       clicksByLink: [{ label: "Bio de X", clicks: 1 }],
       topArtworks: [{ title: "Obra vista", views: 1 }],
     });
     // The 02:30 UTC click still belongs to October 30 in Buenos Aires.
     expect(summary.daily).toEqual([
-      { day: "2026-10-30", visits: 3, clicks: 3 },
+      { day: "2026-10-30", visits: 3, clicks: 2 },
       { day: "2026-10-31", visits: 0, clicks: 0 },
     ]);
   });
@@ -126,7 +127,7 @@ describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
       sql`select column_name from information_schema.columns where table_name = 'events'`,
     );
 
-    expect(rows.length).toBe(8);
+    expect(rows.length).toBe(7);
     for (const { row } of rows) {
       for (const ip of [IP_A, IP_B]) {
         expect(row).not.toContain(ip);

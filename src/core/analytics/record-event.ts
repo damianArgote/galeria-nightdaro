@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { ArtworkRepository } from "../artworks/artwork-repository";
 import type { TrackingLinkRepository } from "../links/link-repositories";
+import { systemClock, type Clock } from "../shared/clock";
 import type { VisitorContext } from "./analytics-event";
 import type { EventRepository } from "./ports";
 
@@ -59,11 +60,15 @@ export class RecordClientEvent {
   }
 }
 
+/** Repeated clicks (double clicks, browser prefetch + navigation) count once in this window. */
+export const CLICK_DEDUP_MS = 30_000;
+
 /** /r/{code}: records the click and returns where to send the visitor, or null. */
 export class RecordClick {
   constructor(
     private readonly events: EventRepository,
     private readonly links: TrackingLinkRepository,
+    private readonly clock: Clock = systemClock,
   ) {}
 
   async execute(
@@ -72,8 +77,11 @@ export class RecordClick {
   ): Promise<string | null> {
     const link = await this.links.findByCode(code);
     if (!link) return null;
-    if (visitor) {
+    const now = this.clock();
+    const since = new Date(now.getTime() - CLICK_DEDUP_MS);
+    if (visitor && !(await this.events.hasClickSince(visitor.sessionHash, link.id, since))) {
       await this.events.record({
+        occurredAt: now,
         type: "click",
         artworkId: null,
         linkId: link.id,

@@ -22,6 +22,16 @@ export class FakeEventRepository implements EventRepository {
     this.recorded.push({ ...event });
   }
 
+  async hasClickSince(sessionHash: string, linkId: string, since: Date): Promise<boolean> {
+    return this.recorded.some(
+      (e) =>
+        e.type === "click" &&
+        e.sessionHash === sessionHash &&
+        e.linkId === linkId &&
+        (e.occurredAt ?? new Date()) >= since,
+    );
+  }
+
   async summarize(range: DateRange): Promise<SummaryCounts> {
     this.lastRange = range;
     return this.counts;

@@ -15,6 +15,8 @@ export interface AnalyticsEvent {
   /** Host of the referring site, never the full URL. */
   referrer: string | null;
   country: string | null;
+  /** Defaults to the time it is stored. */
+  occurredAt?: Date;
 }
 
 /** Where a visitor came from: who they are is never part of it. */
