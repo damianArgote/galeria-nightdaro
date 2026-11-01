@@ -23,15 +23,15 @@ Assumptions (not asked by the user, marked as such):
 
 ## Tasks
 
-| ID  | Specs     | Route         | Status  | Evidence                                                                                       |
-| --- | --------- | ------------- | ------- | ---------------------------------------------------------------------------------------------- |
-| T1  | S1        | inline        | done    | docs/arquitectura.md updated in T2's commit                                                    |
-| T2  | S2, S3    | inline        | done    | 6b051f8: 238 unit + 5 e2e (patreon.spec) green; verifier PASS, 4 advisories fixed              |
-| T3  | S4, S5    | inline        | done    | 319df64: 256 unit + 42 e2e green (patreon.spec: signed pledge once, 401/400); verifier pending |
-| T4  | S6        | inline        | pending |                                                                                                |
-| T5  | S7        | inline        | pending |                                                                                                |
-| T6  | S8        | inline        | pending |                                                                                                |
-| T7  | Done when | user + inline | pending | Patreon client registered, Render env vars, real connection                                    |
+| ID  | Specs     | Route         | Status  | Evidence                                                                                                                 |
+| --- | --------- | ------------- | ------- | ------------------------------------------------------------------------------------------------------------------------ |
+| T1  | S1        | inline        | done    | docs/arquitectura.md updated in T2's commit                                                                              |
+| T2  | S2, S3    | inline        | done    | 6b051f8: 238 unit + 5 e2e (patreon.spec) green; verifier PASS, 4 advisories fixed                                        |
+| T3  | S4, S5    | inline        | done    | 319df64: 256 unit + 42 e2e green (patreon.spec: signed pledge once, 401/400); verifier PASS, advisories fixed in 9223b26 |
+| T4  | S6        | inline        | pending |                                                                                                                          |
+| T5  | S7        | inline        | pending |                                                                                                                          |
+| T6  | S8        | inline        | pending |                                                                                                                          |
+| T7  | Done when | user + inline | pending | Patreon client registered, Render env vars, real connection                                                              |
 
 Route evidence: no Writer trigger — the units depend on each other (T3 needs T2's connection, T4 needs T3's data), so they run inline in order. T2, T3 and T6 touch security (OAuth, token encryption, webhook signature, fetching remote images): high-risk item 2, independent verifier after their checks.
 
@@ -46,4 +46,5 @@ Route evidence: no Writer trigger — the units depend on each other (T3 needs T
 - **L7** (2026-11-01, user): chose "Uno tras otro a main (Recommended)" for the chain strategy: each PR goes to main when ready, the next one starts from the updated main. PR 1 = T1+T2 (stacked on #30 until it merges).
 - **L8** (2026-11-01): T2 verifier PASS. Fixed: refresh reuses a pair another caller already stored; a refresh saved-fail logs "reconnect"; GCM tag length pinned to 16; a misconfigured client only disables the Patreon panel. Deferred to T3: inject a shared PatreonAccess from the container.
 - **L9** (2026-11-01): T3 done in 319df64 (PR 2, branch `feat/patreon-webhook` stacked on `feat/patreon`). On connect: Patreon tiers stored in `patreon_tiers`, ours linked by unique price then name (a hand-picked link stays; a Patreon tier is never linked twice: use-case ConflictError + unique index), the webhook is created once, members replaced. If set-up fails after the connection is saved, the panel says "incompleto" and connecting again retries. Webhook: signature checked before parsing, 1 MB cap, unknown event 400, `posts:publish` acknowledged (204) until T6; event key = sha256(trigger + raw body).
+- **L10** (2026-11-01): T3 verifier PASS, 5 advisories. Fixed in 9223b26: each verified pledge reads the member's current state from Patreon (payload only as fallback; a member Patreon no longer has becomes former), so late or out-of-order retries cannot revive a patron; the member is saved before the event so a failed save is retried; the webhook route decrypts only the secret and answers 503 if it cannot; leftover webhooks with our URI are deleted before creating one; body size in bytes; an invalid pledge date becomes null. Not changed: a tier unlinked by hand is re-linked on the next connect (acceptable: the panel shows and fixes it).
 - Next: T4.
