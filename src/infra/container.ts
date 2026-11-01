@@ -39,6 +39,7 @@ import {
   PatreonAccess,
   StartPatreonConnect,
 } from "@/core/patreon/connect";
+import { GetPatreonSummary } from "@/core/patreon/summary";
 import { RecordPatreonPledge, SetUpPatreonCampaign } from "@/core/patreon/sync";
 import { InvalidInputError } from "@/core/shared/errors";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
@@ -130,6 +131,12 @@ function patreon() {
       members,
       events: new DrizzlePatreonEventRepository(getDb()),
     }),
+    summary: new GetPatreonSummary(
+      new DrizzlePatreonEventRepository(getDb()),
+      members,
+      catalog,
+      tiers(),
+    ),
     /** The secret Patreon signs webhooks with; null until the webhook exists. */
     webhookSecret: () => connections.webhookSecret(),
     disconnect: new DisconnectPatreon(setup.port, connections),

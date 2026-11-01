@@ -1,6 +1,7 @@
 import type {
   PatreonCampaign,
   PatreonEvent,
+  PatreonEventKind,
   PatreonTier,
   PatreonConnection,
   PatreonMember,
@@ -53,4 +54,12 @@ export interface PatreonMemberRepository {
 export interface PatreonEventRepository {
   /** False when an event with the same key was already recorded (a retried delivery). */
   recordOnce(event: PatreonEvent): Promise<boolean>;
+  /** Events per kind and Patreon tier between two Buenos Aires days, both included. */
+  countInRange(range: { from: string; to: string }): Promise<PatreonEventCount[]>;
+}
+
+export interface PatreonEventCount {
+  kind: PatreonEventKind;
+  patreonTierId: string | null;
+  count: number;
 }

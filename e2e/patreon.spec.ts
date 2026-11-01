@@ -98,7 +98,9 @@ test.describe("Patreon webhook", () => {
 
   test.afterAll(async () => {
     await connections.delete();
-    await db.db.execute(sql`delete from patreon_events; delete from patreon_members`);
+    await db.db.execute(
+      sql`delete from patreon_events; delete from patreon_members; delete from patreon_tiers`,
+    );
     await db.close();
   });
 
@@ -128,5 +130,23 @@ test.describe("Patreon webhook", () => {
     expect([...events]).toEqual([{ kind: "alta", amount_cents: 500 }]);
     const members = await db.db.execute(sql`select * from patreon_members`);
     expect(JSON.stringify([...members])).not.toMatch(/Fan|fan@/);
+  });
+
+  test("the Resumen shows the pledge next to the clicks", async ({ browser }) => {
+    await db.db.execute(
+      sql`insert into patreon_tiers (id, title, amount_cents, position) values ('pt-5', 'Support', 500, 0)`,
+    );
+    const admin = await browser.newContext({ storageState: ADMIN_STATE });
+    const page = await admin.newPage();
+    await page.goto("/admin");
+
+    const section = page.getByTestId("patreon-summary");
+    await expect(section.getByTestId("stat-Altas")).toHaveText("1");
+    await expect(section.getByTestId("stat-Patrons activos")).toHaveText("1");
+    await expect(section.getByTestId("stat-Ingreso mensual estimado")).toHaveText("US$5");
+    await expect(section.getByTestId("patreon-by-tier").getByRole("row").nth(1)).toHaveText(
+      /Support\s*sin vincular\s*1\s*1/,
+    );
+    await admin.close();
   });
 });

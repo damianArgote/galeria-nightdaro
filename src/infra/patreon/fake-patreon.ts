@@ -10,6 +10,7 @@ import type {
 } from "@/core/patreon/patreon";
 import type {
   PatreonConnectionRepository,
+  PatreonEventCount,
   PatreonEventRepository,
   PatreonMemberRepository,
   PatreonPort,
@@ -164,6 +165,23 @@ export class FakePatreonMemberRepository implements PatreonMemberRepository {
 
 export class FakePatreonEventRepository implements PatreonEventRepository {
   readonly events: PatreonEvent[] = [];
+  /** Day in Buenos Aires (UTC-3, no DST) of each event, as the database computes it. */
+  async countInRange({ from, to }: { from: string; to: string }) {
+    const day = (d: Date) => new Date(d.getTime() - 3 * 3_600_000).toISOString().slice(0, 10);
+    const counts = new Map<string, PatreonEventCount>();
+    for (const event of this.events) {
+      const d = day(event.occurredAt);
+      if (d < from || d > to) continue;
+      const key = `${event.kind}|${event.patreonTierId}`;
+      const current = counts.get(key) ?? {
+        kind: event.kind,
+        patreonTierId: event.patreonTierId,
+        count: 0,
+      };
+      counts.set(key, { ...current, count: current.count + 1 });
+    }
+    return [...counts.values()];
+  }
   async recordOnce(event: PatreonEvent) {
     if (this.events.some((e) => e.key === event.key)) return false;
     this.events.push(structuredClone(event));
