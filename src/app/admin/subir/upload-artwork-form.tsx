@@ -10,6 +10,7 @@ import type { ActionResult } from "@/app/admin/_lib/action-result";
 import { ARTWORK_RATINGS } from "@/core/artworks/artwork";
 import { artworkFieldsSchema } from "@/core/artworks/artwork-schemas";
 import { applyFieldErrors } from "@/components/admin/apply-field-errors";
+import { uploadCover } from "../_lib/upload-cover";
 import { KIND_LABELS, RATING_LABELS } from "@/components/admin/artwork-labels";
 import { FormField } from "@/components/admin/form-field";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,12 @@ export function UploadArtworkForm() {
   const router = useRouter();
   const [image, setImage] = useState<File>();
   const [censored, setCensored] = useState<File>();
-  const [fileErrors, setFileErrors] = useState<{ image?: string; censored?: string }>({});
+  const [cover, setCover] = useState<File>();
+  const [fileErrors, setFileErrors] = useState<{
+    image?: string;
+    censored?: string;
+    cover?: string;
+  }>({});
   const [progress, setProgress] = useState<number>();
   const [formError, setFormError] = useState<string>();
   const {
@@ -100,12 +106,21 @@ export function UploadArtworkForm() {
     setProgress(0);
     try {
       await uploadToStream(file, values.title, upload, setProgress);
-      router.push("/admin/galeria?tipo=timelapse");
     } catch {
       await deleteArtworkAction({ id: artworkId });
       setProgress(undefined);
       setFormError("La subida del video falló. Probá de nuevo.");
+      return;
     }
+    if (cover) {
+      // The video is safe already; a failed cover is retried from Galería.
+      const result = await uploadCover(artworkId, cover);
+      if (!result.ok) {
+        router.push(`/admin/galeria?tipo=timelapse&portada=error`);
+        return;
+      }
+    }
+    router.push("/admin/galeria?tipo=timelapse");
   }
 
   const submit = handleSubmit(async (values) => {
@@ -230,6 +245,20 @@ export function UploadArtworkForm() {
         </div>
         {errors.rating && <p className="text-xs text-destructive">{errors.rating.message}</p>}
       </fieldset>
+
+      {timelapse && (
+        <ImageDrop
+          accept={ACCEPT}
+          label="Portada"
+          hint="Opcional. La imagen de la tarjeta en la galería; si no subís una, se usa un cuadro del video cuando Bunny termina de procesarlo."
+          file={cover}
+          error={fileErrors.cover}
+          onChange={(file) => {
+            setCover(file);
+            setFileErrors((e) => ({ ...e, cover: file && fileProblem(file) }));
+          }}
+        />
+      )}
 
       {explicit && !timelapse && (
         <ImageDrop

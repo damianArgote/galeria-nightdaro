@@ -15,10 +15,11 @@ function parseKind(value: string | string[] | undefined): ArtworkKind {
 export default async function GalleryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ tipo?: string | string[] }>;
+  searchParams: Promise<{ tipo?: string | string[]; portada?: string }>;
 }) {
   await requireAdminPage();
-  const kind = parseKind((await searchParams).tipo);
+  const params = await searchParams;
+  const kind = parseKind(params.tipo);
   const artworks = await container.listArtworks.execute({ kind });
   const ids = artworks.map((a) => a.id);
   if (kind === "timelapse") {
@@ -26,6 +27,8 @@ export default async function GalleryPage({
     await container.syncVideoStatus?.forArtworks(ids).catch((error: unknown) => {
       console.error("Could not sync video status", error);
     });
+    // Ready videos without a cover get Bunny's thumbnail (older timelapses included).
+    await container.ensureTimelapseCovers?.forArtworks(ids);
   }
   // Images rendered for a milder rating than the artwork's (crossed edits, older uploads) are
   // never signed; render them again here so the panel heals them.
@@ -87,6 +90,11 @@ export default async function GalleryPage({
             Nueva obra
           </Button>
         </div>
+        {params.portada === "error" && (
+          <p role="alert" className="mb-3 text-sm text-destructive">
+            El video se subió, pero la portada no. Subila de nuevo con «Subir portada».
+          </p>
+        )}
         <GalleryManager kind={kind} artworks={current} thumbs={thumbs} videos={videos} />
       </Panel>
     </>

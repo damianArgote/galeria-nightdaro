@@ -4,6 +4,7 @@ import type { VideoPort, VideoStatus, VideoUploadAuthorization } from "@/core/me
 export class FakeVideoPort implements VideoPort {
   readonly statuses = new Map<string, VideoStatus>();
   readonly deleted: string[] = [];
+  readonly thumbnails = new Map<string, Uint8Array>();
   failCreate = false;
   private next = 1;
 
@@ -36,5 +37,9 @@ export class FakeVideoPort implements VideoPort {
   async deleteVideo(videoId: string): Promise<void> {
     this.deleted.push(videoId);
     this.statuses.delete(videoId);
+  }
+
+  async thumbnail(videoId: string): Promise<Uint8Array | null> {
+    return this.thumbnails.get(videoId) ?? null;
   }
 }

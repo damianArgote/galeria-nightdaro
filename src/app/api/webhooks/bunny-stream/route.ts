@@ -26,5 +26,6 @@ export async function POST(request: Request) {
   }
 
   await container.syncVideoStatus?.forVideo(payload.VideoGuid);
+  await container.ensureTimelapseCovers?.forVideo(payload.VideoGuid);
   return new Response(null, { status: 204 });
 }

@@ -31,6 +31,7 @@ import { ListArtworkVideos } from "@/core/media/list-artwork-videos";
 import { RerenderArtworkImage } from "@/core/media/rerender-artwork-image";
 import { StartTimelapseUpload } from "@/core/media/start-timelapse-upload";
 import { SyncVideoStatus } from "@/core/media/sync-video-status";
+import { EnsureTimelapseCovers } from "@/core/media/timelapse-covers";
 import { UploadArtworkImage } from "@/core/media/upload-artwork-image";
 import {
   CompletePatreonConnect,
@@ -189,6 +190,9 @@ export const container = {
     return new GetAnalyticsSummary(events());
   },
 
+  findArtwork(id: string) {
+    return artworks().findById(id);
+  },
   get listArtworks() {
     return new ListArtworks(artworks());
   },
@@ -249,6 +253,24 @@ export const container = {
   get syncVideoStatus() {
     const video = createVideoPort();
     return video && new SyncVideoStatus(mediaAssets(), video);
+  },
+  /** Null when Bunny Stream is not configured: no thumbnails to turn into covers. */
+  get ensureTimelapseCovers() {
+    const video = createVideoPort();
+    return (
+      video &&
+      new EnsureTimelapseCovers(
+        mediaAssets(),
+        video,
+        new UploadArtworkImage({
+          artworks: artworks(),
+          media: mediaAssets(),
+          storage: createStorage(),
+          images: imageProcessor,
+          keyPrefix: STORAGE_KEY_PREFIX,
+        }),
+      )
+    );
   },
   get listArtworkVideos() {
     return new ListArtworkVideos(mediaAssets(), createVideoPort());

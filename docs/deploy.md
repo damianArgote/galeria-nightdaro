@@ -47,7 +47,7 @@ En el plan Free, la base se suspende tras unos minutos sin uso, así que la prim
    - activar **Embed view token authentication**; su clave es `BUNNY_STREAM_TOKEN_KEY`;
    - en **Allowed domains**, `www.nightdaro.com` y `nightdaro.com`.
 3. **Player → Watermark**: subir el logo de NightDaro.
-4. **API**: el **Library ID** es `BUNNY_STREAM_LIBRARY_ID`, la **API Key** es `BUNNY_STREAM_API_KEY` y la **Read-only API Key** es `BUNNY_STREAM_READONLY_KEY`.
+4. **API**: el **Library ID** es `BUNNY_STREAM_LIBRARY_ID`, la **API Key** es `BUNNY_STREAM_API_KEY` y la **Read-only API Key** es `BUNNY_STREAM_READONLY_KEY`. El **CDN Hostname** (`vz-….b-cdn.net`) es `BUNNY_STREAM_CDN_HOST`: con él, un timelapse sin portada toma como portada la miniatura que genera Bunny, procesada como cualquier obra (baja resolución y marca de agua). Si la librería tiene **CDN token authentication**, la miniatura se firma con la misma clave que el embed (`BUNNY_STREAM_TOKEN_KEY`), así que no hace falta otra variable.
 5. **Webhooks** (opcional; el panel también consulta el estado solo): URL `https://www.nightdaro.com/api/webhooks/bunny-stream`.
 
 Con un token inválido, el embed de Bunny responde igual HTTP 200, pero con una página que dice "403" y sin player. Para probar la librería: `STREAM_LIVE=1 pnpm test:e2e timelapse-live`, apuntando con `.env.local` a la librería que se quiere probar.
