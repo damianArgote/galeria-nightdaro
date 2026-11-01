@@ -41,7 +41,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
         </div>
         <nav aria-label="Panel">
-          <AdminNav />
+          <AdminNav owner={admin.role === "owner"} />
         </nav>
         <div className="flex flex-col gap-3 md:mt-auto">
           <div className="hidden items-center gap-2.5 rounded-sm border-2 border-black bg-card p-2.5 shadow-[3px_3px_0_#000] md:flex">
@@ -56,6 +56,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               </small>
             </div>
           </div>
+          <a
+            href="/cambiar-clave"
+            className="text-center text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Cambiar contraseña
+          </a>
           <form action={logout}>
             <button
               type="submit"

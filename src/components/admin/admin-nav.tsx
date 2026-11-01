@@ -10,15 +10,17 @@ export const ADMIN_SECTIONS = [
   { href: "/admin/galeria", label: "Galería", title: "Galería", kanji: "画廊" },
   { href: "/admin/pagina", label: "Página", title: "Página pública", kanji: "編集" },
   { href: "/admin/links", label: "Links", title: "Tiers y links", kanji: "支援" },
+  { href: "/admin/usuarios", label: "Usuarios", title: "Usuarios", kanji: "仲間", ownerOnly: true },
 ] as const;
 
 /** Sidebar menu of the studio mockup: brush kanji per section, active item on paper. */
-export function AdminNav() {
+export function AdminNav({ owner }: { owner: boolean }) {
   const pathname = usePathname();
+  const sections = ADMIN_SECTIONS.filter((item) => owner || !("ownerOnly" in item));
 
   return (
     <ul className="flex flex-row gap-1.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
-      {ADMIN_SECTIONS.map((item) => {
+      {sections.map((item) => {
         const active = pathname === item.href;
         return (
           <li key={item.href} className="flex-none">

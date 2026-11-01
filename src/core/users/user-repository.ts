@@ -13,6 +13,13 @@ export interface UserRepository {
    * Writes only the password fields, and only if the session version is still the one read
    * (nothing disabled or reset the admin meanwhile). False when it was not written.
    */
+  /**
+   * Disables (a date) or re-enables (null) the admin; bumps the session version atomically.
+   * Never disables the last active owner, checked in the same write: false when refused.
+   */
+  setDisabled(id: string, disabledAt: Date | null): Promise<boolean>;
+  /** A new temporary password that must be changed; bumps the session version atomically. */
+  resetPassword(id: string, passwordHash: string): Promise<boolean>;
   updatePassword(
     id: string,
     expectedVersion: number,
