@@ -61,6 +61,27 @@ describe("ChangeOwnPassword", () => {
     expect(await users.findById("u2")).toEqual(luna);
   });
 
+  it("does not undo a disable or reset that happened while the password was being changed", async () => {
+    const realFind = users.findById.bind(users);
+    users.findById = async (id) => {
+      const read = await realFind(id);
+      // The owner resets this admin right after our read.
+      await users.save({
+        ...read!,
+        sessionVersion: read!.sessionVersion + 1,
+        disabledAt: new Date(),
+      });
+      return read;
+    };
+    await expect(
+      change.execute("u2", {
+        currentPassword: "Temp-1234-abcd",
+        newPassword: "una frase larga y propia",
+      }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect((await realFind("u2"))?.disabledAt).not.toBeNull();
+  });
+
   it("refuses a disabled or unknown admin", async () => {
     await users.save({ ...luna, disabledAt: new Date() });
     await expect(

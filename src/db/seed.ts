@@ -1,3 +1,4 @@
+import { eq } from "drizzle-orm";
 import { Argon2PasswordHasher } from "../infra/auth/argon2-password-hasher";
 import type { Db } from "./client";
 import { siteSettings, tiers, trackingLinks, users } from "./schema";
@@ -64,6 +65,14 @@ export async function seed(db: Db, admins: SeedAdmin[]): Promise<void> {
       })
       .onConflictDoNothing();
   }
+
+  // The seed only bootstraps the first owner; after that, admins are created from the panel.
+  const [owner] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.role, "owner"))
+    .limit(1);
+  if (owner) return;
 
   for (const admin of admins) {
     await db

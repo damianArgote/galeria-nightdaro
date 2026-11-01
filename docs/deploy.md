@@ -77,7 +77,7 @@ Con un token inválido, el embed de Bunny responde igual HTTP 200, pero con una 
 
    Usar comillas simples en las contraseñas (`'...'`) para que la shell no interprete `$` ni `!`. El seed crea un solo admin, con rol **dueño**: los demás admins los crea el dueño desde el panel.
 
-   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y el dueño. Volver a correrlo no toca lo que ya existe. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
+   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y el dueño. Volver a correrlo no toca lo que ya existe, y si ya hay un dueño no crea otro: los admins nuevos se crean desde el panel. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
 
 Si el build falla porque Render instala las dependencias por su cuenta con otra versión de pnpm, la variable `SKIP_INSTALL_DEPS=true` (ya está en `render.yaml`) lo evita. Es un workaround que propone la comunidad de Render, no documentación oficial.
 

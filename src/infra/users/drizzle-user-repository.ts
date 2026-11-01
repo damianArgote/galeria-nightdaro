@@ -1,4 +1,4 @@
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull } from "drizzle-orm";
 import type { AdminUser } from "@/core/users/user";
 import type { UserRepository } from "@/core/users/user-repository";
 import type { Db } from "@/db/client";
@@ -37,6 +37,21 @@ export class DrizzleUserRepository implements UserRepository {
 
   list(): Promise<AdminUser[]> {
     return this.db.select(columns).from(users).orderBy(asc(users.createdAt));
+  }
+
+  async updatePassword(
+    id: string,
+    expectedVersion: number,
+    fields: Pick<AdminUser, "passwordHash" | "mustChangePassword" | "sessionVersion">,
+  ): Promise<boolean> {
+    const updated = await this.db
+      .update(users)
+      .set(fields)
+      .where(
+        and(eq(users.id, id), eq(users.sessionVersion, expectedVersion), isNull(users.disabledAt)),
+      )
+      .returning({ id: users.id });
+    return updated.length > 0;
   }
 
   async save(user: AdminUser): Promise<void> {

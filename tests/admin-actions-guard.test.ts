@@ -158,6 +158,13 @@ describe("admin Server Actions", () => {
     expect(unguarded).toEqual([]);
   });
 
+  it("only the password change opens with a temporary password", () => {
+    const open = files.flatMap((file) =>
+      readFileSync(file, "utf8").includes("allowTemporaryPassword") ? [file] : [],
+    );
+    expect(open).toEqual(["src/app/cambiar-clave/actions.ts"]);
+  });
+
   it("validate their input with Zod through runAction(schema, input)", () => {
     const unvalidated = files.flatMap((file) =>
       exportedActions(file)

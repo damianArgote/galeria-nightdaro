@@ -39,4 +39,32 @@ describe.skipIf(!databaseUrl)("admin login against Postgres", () => {
       authenticate.execute({ username: "nobody", password: "daro-secret" }),
     ).resolves.toBeNull();
   });
+
+  it("updates the password only while the session version and the active state match", async () => {
+    const repository = new DrizzleUserRepository(testDb.db);
+    const daro = (await repository.findByUsername("daro"))!;
+    const fields = { passwordHash: daro.passwordHash, mustChangePassword: false };
+
+    expect(
+      await repository.updatePassword(daro.id, daro.sessionVersion + 7, {
+        ...fields,
+        sessionVersion: 99,
+      }),
+    ).toBe(false);
+    await repository.save({ ...daro, disabledAt: new Date() });
+    expect(
+      await repository.updatePassword(daro.id, daro.sessionVersion, {
+        ...fields,
+        sessionVersion: 99,
+      }),
+    ).toBe(false);
+    await repository.save(daro);
+    expect(
+      await repository.updatePassword(daro.id, daro.sessionVersion, {
+        ...fields,
+        sessionVersion: daro.sessionVersion + 1,
+      }),
+    ).toBe(true);
+    expect((await repository.findById(daro.id))?.sessionVersion).toBe(daro.sessionVersion + 1);
+  });
 });

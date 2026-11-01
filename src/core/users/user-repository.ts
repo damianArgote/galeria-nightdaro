@@ -9,4 +9,13 @@ export interface UserRepository {
   list(): Promise<AdminUser[]>;
   /** Inserts or replaces by id. */
   save(user: AdminUser): Promise<void>;
+  /**
+   * Writes only the password fields, and only if the session version is still the one read
+   * (nothing disabled or reset the admin meanwhile). False when it was not written.
+   */
+  updatePassword(
+    id: string,
+    expectedVersion: number,
+    fields: Pick<AdminUser, "passwordHash" | "mustChangePassword" | "sessionVersion">,
+  ): Promise<boolean>;
 }

@@ -174,6 +174,8 @@ export const container = {
   passwordHasher,
   /** 5 login attempts per minute per IP. */
   loginRateLimiter: new RateLimiter({ limit: 5, windowMs: 60_000 }),
+  /** 5 password-change attempts per minute per admin: the current password is not an oracle. */
+  passwordChangeRateLimiter: new RateLimiter({ limit: 5, windowMs: 60_000 }),
   /** 60 analytics events per minute per IP. */
   eventRateLimiter: new RateLimiter({ limit: 60, windowMs: 60_000 }),
 

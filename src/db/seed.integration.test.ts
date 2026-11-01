@@ -79,6 +79,14 @@ describe.skipIf(!databaseUrl)("seed", () => {
     expect(await new Argon2PasswordHasher().verify("wrong", daro.passwordHash)).toBe(false);
   });
 
+  it("creates no second owner once one exists, whatever username is given", async () => {
+    await seed(testDb.db, [admins[0]!]);
+    await seed(testDb.db, [{ username: "otro", password: "otra-clave" }]);
+
+    const rows = await testDb.db.select().from(users);
+    expect(rows.map((u) => u.username)).toEqual(["daro"]);
+  });
+
   it("is idempotent", async () => {
     await seed(testDb.db, admins);
     await seed(testDb.db, admins);

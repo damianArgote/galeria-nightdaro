@@ -1,6 +1,6 @@
 import "server-only";
 import { requireAdmin } from "@/auth";
-import { UnauthorizedError } from "@/infra/auth/require-admin";
+import { MustChangePasswordError, UnauthorizedError } from "@/infra/auth/require-admin";
 
 /**
  * Wraps an admin route handler: no session, no handler. Every export of a route under
@@ -15,6 +15,12 @@ export function adminRoute(handler: (request: Request) => Promise<Response>) {
         return Response.json(
           { ok: false, error: "Tu sesión venció. Volvé a entrar." },
           { status: 401 },
+        );
+      }
+      if (error instanceof MustChangePasswordError) {
+        return Response.json(
+          { ok: false, error: "Elegí tu contraseña antes de usar el panel." },
+          { status: 403 },
         );
       }
       throw error;

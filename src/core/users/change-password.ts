@@ -37,11 +37,12 @@ export class ChangeOwnPassword {
     if (newPassword === currentPassword) {
       throw new ConflictError("Elegí una contraseña distinta de la actual", "newPassword");
     }
-    await this.users.save({
-      ...user,
+    const written = await this.users.updatePassword(user.id, user.sessionVersion, {
       passwordHash: await this.hasher.hash(newPassword),
       mustChangePassword: false,
       sessionVersion: user.sessionVersion + 1,
     });
+    // Disabled or reset by the owner meanwhile: their change wins.
+    if (!written) throw new ConflictError("Tu sesión cambió mientras guardabas. Volvé a entrar.");
   }
 }

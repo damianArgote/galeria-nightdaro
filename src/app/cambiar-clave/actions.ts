@@ -8,6 +8,9 @@ import { runAction } from "../admin/_lib/run-action";
 /** The only action open with a temporary password. */
 export async function changePasswordAction(input: unknown) {
   const admin = await requireAdmin({ allowTemporaryPassword: true });
+  if (!container.passwordChangeRateLimiter.consume(admin.id)) {
+    return { ok: false as const, error: "Demasiados intentos. Esperá un minuto y probá de nuevo." };
+  }
   return runAction(changeOwnPasswordSchema, input, (data) =>
     container.changeOwnPassword.execute(admin.id, data),
   );

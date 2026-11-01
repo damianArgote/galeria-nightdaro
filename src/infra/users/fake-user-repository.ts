@@ -19,6 +19,17 @@ export class FakeUserRepository implements UserRepository {
   async list() {
     return [...this.items.values()].map((u) => structuredClone(u));
   }
+  async updatePassword(
+    id: string,
+    expectedVersion: number,
+    fields: Pick<AdminUser, "passwordHash" | "mustChangePassword" | "sessionVersion">,
+  ) {
+    const user = this.items.get(id);
+    if (!user || user.sessionVersion !== expectedVersion || user.disabledAt) return false;
+    this.items.set(id, { ...user, ...fields });
+    return true;
+  }
+
   async save(user: AdminUser) {
     const taken = [...this.items.values()].find(
       (u) => u.username === user.username && u.id !== user.id,
