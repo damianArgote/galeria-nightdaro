@@ -71,10 +71,12 @@ Con un token inválido, el embed de Bunny responde igual HTTP 200, pero con una 
 
    ```bash
    corepack enable
-   SEED_DARO_EMAIL=... SEED_DARO_PASSWORD=... SEED_DAMI_EMAIL=... SEED_DAMI_PASSWORD=... pnpm db:seed
+   SEED_DARO_EMAIL=... SEED_DARO_PASSWORD=... SEED_DAMI_EMAIL=... SEED_DAMI_PASSWORD=... SEED_ADMIN3_EMAIL=... SEED_ADMIN3_PASSWORD=... pnpm db:seed
    ```
 
-   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y los dos admins. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
+   Usar comillas simples en las contraseñas (`'...'`) para que la shell no interprete `$` ni `!`. El tercer admin (`SEED_ADMIN3_*`) es opcional: van las dos variables o ninguna.
+
+   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y los admins. Se puede volver a correr para sumar un admin: lo que ya existe no se toca. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
 
 Si el build falla porque Render instala las dependencias por su cuenta con otra versión de pnpm, la variable `SKIP_INSTALL_DEPS=true` (ya está en `render.yaml`) lo evita. Es un workaround que propone la comunidad de Render, no documentación oficial.
 
