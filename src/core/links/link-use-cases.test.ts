@@ -145,6 +145,24 @@ describe("tier benefits and highlight", () => {
   });
 });
 
+describe("tier link to Patreon", () => {
+  it("rejects linking two tiers to the same Patreon tier, and allows unlinking", async () => {
+    const create = new CreateTier(tiers);
+    const a = await create.execute({ ...tierInput, name: "A", patreonTierId: "pt-5" });
+    await expect(
+      create.execute({ ...tierInput, name: "B", patreonTierId: "pt-5" }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    const b = await create.execute({ ...tierInput, name: "B" });
+    await expect(
+      new UpdateTier(tiers).execute({ ...tierInput, ...b, patreonTierId: "pt-5" }),
+    ).rejects.toMatchObject({ field: "patreonTierId" });
+
+    await new UpdateTier(tiers).execute({ ...tierInput, ...a, patreonTierId: null });
+    await new UpdateTier(tiers).execute({ ...tierInput, ...b, patreonTierId: "pt-5" });
+    expect((await tiers.findById(b.id))?.patreonTierId).toBe("pt-5");
+  });
+});
+
 describe("tracking links", () => {
   const linkInput = { label: "Bio de Instagram", targetUrl: "https://www.patreon.com/nightdaro" };
 

@@ -44,3 +44,17 @@ export async function clearOtherHighlights(tiers: TierRepository, ownId: string)
     if (tier.highlighted && tier.id !== ownId) await tiers.save({ ...tier, highlighted: false });
   }
 }
+
+/** A Patreon tier is sold by at most one of our tiers (unique in the database). */
+export async function assertPatreonTierFree(
+  tiers: TierRepository,
+  { patreonTierId, ownId }: { patreonTierId: string | null; ownId?: string },
+) {
+  if (!patreonTierId) return;
+  const taken = (await tiers.list()).some(
+    (t) => t.patreonTierId === patreonTierId && t.id !== ownId,
+  );
+  if (taken) {
+    throw new ConflictError("Ese tier de Patreon ya está vinculado a otro tier", "patreonTierId");
+  }
+}

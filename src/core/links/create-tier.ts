@@ -1,5 +1,10 @@
 import type { z } from "zod";
-import { assertTierNameFree, clearOtherHighlights, randomCode } from "./link-code";
+import {
+  assertPatreonTierFree,
+  assertTierNameFree,
+  clearOtherHighlights,
+  randomCode,
+} from "./link-code";
 import type { TierRepository, TrackingLinkRepository } from "./link-repositories";
 import { tierFieldsSchema } from "./link-schemas";
 import type { Tier } from "./tier";
@@ -27,6 +32,7 @@ export class CreateTier {
   async execute(input: CreateTierInput): Promise<Tier> {
     const fields = createTierSchema.parse(input);
     await assertTierNameFree(this.tiers, fields);
+    await assertPatreonTierFree(this.tiers, fields);
     const existing = await this.tiers.list();
     const tier: Tier = {
       ...fields,
