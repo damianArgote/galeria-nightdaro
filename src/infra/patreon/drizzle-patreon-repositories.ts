@@ -1,13 +1,15 @@
-import { asc } from "drizzle-orm";
+import { and, asc, count, gte, lt, sql } from "drizzle-orm";
 import type { PatreonEvent, PatreonMember, PatreonTier } from "@/core/patreon/patreon";
 import { PATRON_STATUSES, type PatronStatus } from "@/core/patreon/patreon";
 import type {
+  PatreonEventCount,
   PatreonEventRepository,
   PatreonMemberRepository,
   PatreonTierCatalog,
 } from "@/core/patreon/ports";
 import type { Db } from "@/db/client";
 import { patreonEvents, patreonMembers, patreonTiers } from "@/db/schema";
+import { ANALYTICS_TIME_ZONE } from "../analytics/drizzle-event-repository";
 
 export class DrizzlePatreonTierCatalog implements PatreonTierCatalog {
   constructor(private readonly db: Db) {}
@@ -84,5 +86,24 @@ export class DrizzlePatreonEventRepository implements PatreonEventRepository {
       .onConflictDoNothing({ target: patreonEvents.key })
       .returning({ id: patreonEvents.id });
     return inserted.length > 0;
+  }
+
+  async countInRange({ from, to }: { from: string; to: string }): Promise<PatreonEventCount[]> {
+    const tz = ANALYTICS_TIME_ZONE;
+    const rows = await this.db
+      .select({
+        kind: patreonEvents.kind,
+        patreonTierId: patreonEvents.patreonTierId,
+        count: count(),
+      })
+      .from(patreonEvents)
+      .where(
+        and(
+          gte(patreonEvents.occurredAt, sql`(${from}::date)::timestamp at time zone ${tz}`),
+          lt(patreonEvents.occurredAt, sql`((${to}::date + 1))::timestamp at time zone ${tz}`),
+        ),
+      )
+      .groupBy(patreonEvents.kind, patreonEvents.patreonTierId);
+    return rows;
   }
 }

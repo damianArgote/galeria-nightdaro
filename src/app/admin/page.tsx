@@ -30,6 +30,8 @@ function dayInZone(days = 0): string {
 const percent = (value: number) =>
   new Intl.NumberFormat("es-AR", { style: "percent", maximumFractionDigits: 0 }).format(value);
 const number = (value: number) => new Intl.NumberFormat("es-AR").format(value);
+const usd = (cents: number) =>
+  `US$${new Intl.NumberFormat("es-AR", { maximumFractionDigits: 2 }).format(cents / 100)}`;
 
 function Stat({
   label,
@@ -70,7 +72,14 @@ export default async function SummaryPage({
     to: params.hasta ?? dayInZone(),
   });
   const range = parsed.success ? parsed.data : { from: dayInZone(-13), to: dayInZone() };
-  const summary = await container.getAnalyticsSummary.execute(range);
+  const patreon = container.patreon;
+  const [summary, patreonStatus] = await Promise.all([
+    container.getAnalyticsSummary.execute(range),
+    patreon?.status.execute().catch(() => null),
+  ]);
+  const patreonSummary =
+    patreon && patreonStatus?.connected ? await patreon.summary.execute(range) : null;
+  const clicksByTierId = new Map(summary.clicksByTier.map((t) => [t.tierId, t.clicks]));
   const days =
     (Date.parse(`${range.to}T00:00:00Z`) - Date.parse(`${range.from}T00:00:00Z`)) / 86_400_000 + 1;
 
@@ -204,6 +213,72 @@ export default async function SummaryPage({
           </Panel>
         </div>
       </div>
+
+      {patreonSummary && (
+        <Panel className="mt-6" data-testid="patreon-summary">
+          <PanelHeader
+            title="Patreon"
+            description="Altas y bajas del período, junto a los clics de cada tier. Activos e ingreso son de hoy."
+          />
+          <div className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <Stat
+              label="Altas"
+              kanji="入"
+              value={number(patreonSummary.altas)}
+              detail="nuevos patrons en el período"
+            />
+            <Stat
+              label="Bajas"
+              kanji="去"
+              value={number(patreonSummary.bajas)}
+              detail="pledges terminados en el período"
+            />
+            <Stat
+              label="Patrons activos"
+              kanji="今"
+              value={number(patreonSummary.activePatrons)}
+              detail="con el pago al día, hoy"
+            />
+            <Stat
+              label="Ingreso mensual estimado"
+              kanji="金"
+              value={usd(patreonSummary.monthlyIncomeCents)}
+              detail="suma de los pledges activos, antes de comisiones"
+            />
+          </div>
+          <table className="w-full text-left text-sm" data-testid="patreon-by-tier">
+            <thead className="font-mono text-xs text-muted-foreground uppercase">
+              <tr>
+                <th className="pb-2">Tier de Patreon</th>
+                <th className="pb-2 text-right">Clics</th>
+                <th className="pb-2 text-right">Altas</th>
+                <th className="pb-2 text-right">Activos</th>
+              </tr>
+            </thead>
+            <tbody className="tabular-nums">
+              {patreonSummary.byTier.map((tier) => (
+                <tr key={tier.patreonTierId} className="border-t border-border">
+                  <td className="py-2">{tier.title}</td>
+                  <td className="py-2 text-right">
+                    {tier.tierId ? (
+                      number(clicksByTierId.get(tier.tierId) ?? 0)
+                    ) : (
+                      <span
+                        className="text-muted-foreground"
+                        title="Vinculalo a un tier en Tiers y links"
+                      >
+                        sin vincular
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-2 text-right">{number(tier.altas)}</td>
+                  <td className="py-2 text-right">{number(tier.active)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </Panel>
+      )}
 
       <Panel className="mt-6">
         <PanelHeader

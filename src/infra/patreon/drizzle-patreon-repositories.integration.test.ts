@@ -67,4 +67,43 @@ describe.skipIf(!databaseUrl)("Patreon tiers, members and events against Postgre
     expect(await events.recordOnce(event)).toBe(true);
     expect(await events.recordOnce({ ...event, kind: "baja" })).toBe(false);
   });
+
+  it("counts events per kind and tier between Buenos Aires days", async () => {
+    const events = new DrizzlePatreonEventRepository(testDb.db);
+    const base = { memberId: "m", amountCents: 500 };
+    await events.recordOnce({
+      ...base,
+      key: "a",
+      kind: "alta",
+      patreonTierId: "pt-5",
+      occurredAt: new Date("2026-11-01T02:59:00Z"),
+    });
+    await events.recordOnce({
+      ...base,
+      key: "b",
+      kind: "alta",
+      patreonTierId: "pt-5",
+      occurredAt: new Date("2026-11-01T03:00:00Z"),
+    });
+    await events.recordOnce({
+      ...base,
+      key: "c",
+      kind: "alta",
+      patreonTierId: "pt-5",
+      occurredAt: new Date("2026-11-02T03:00:00Z"),
+    });
+    await events.recordOnce({
+      ...base,
+      key: "d",
+      kind: "baja",
+      patreonTierId: null,
+      occurredAt: new Date("2026-11-02T02:59:00Z"),
+    });
+
+    const counts = await events.countInRange({ from: "2026-11-01", to: "2026-11-01" });
+    expect(counts.sort((x, y) => x.kind.localeCompare(y.kind))).toEqual([
+      { kind: "alta", patreonTierId: "pt-5", count: 1 },
+      { kind: "baja", patreonTierId: null, count: 1 },
+    ]);
+  });
 });
