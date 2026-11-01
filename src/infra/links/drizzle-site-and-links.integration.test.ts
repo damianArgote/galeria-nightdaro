@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { CreateTier } from "@/core/links/create-tier";
 import { CreateTrackingLink } from "@/core/links/create-tracking-link";
 import { DeleteTier } from "@/core/links/delete-tier";
+import { UpdateTier } from "@/core/links/update-tier";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
 import { seed } from "@/db/seed";
@@ -67,5 +68,32 @@ describe.skipIf(!databaseUrl)("site settings and links against Postgres", () => 
     await new DeleteTier(tiers).execute({ id: tier.id });
 
     expect(await links.findByCode("fansly-vip")).toEqual({ ...link, tierId: null });
+  });
+
+  it("stores benefits in order and moves the single highlight between tiers", async () => {
+    const tiers = new DrizzleTierRepository(testDb.db);
+    const [first, second] = await tiers.list();
+    expect(first).toMatchObject({ benefits: [], highlighted: false });
+
+    await new UpdateTier(tiers).execute({
+      ...second!,
+      benefits: ["Arte NSFW exclusivo", "Acceso anticipado"],
+      highlighted: true,
+    });
+    await new UpdateTier(tiers).execute({ ...first!, highlighted: true });
+
+    expect(await tiers.findById(second!.id)).toMatchObject({
+      benefits: ["Arte NSFW exclusivo", "Acceso anticipado"],
+      highlighted: false,
+    });
+    expect((await tiers.list()).filter((t) => t.highlighted).map((t) => t.id)).toEqual([first!.id]);
+  });
+
+  it("rejects a second highlighted tier at the database level", async () => {
+    const tiers = new DrizzleTierRepository(testDb.db);
+    const [first, second] = await tiers.list();
+    await tiers.save({ ...first!, highlighted: true });
+
+    await expect(tiers.save({ ...second!, highlighted: true })).rejects.toThrow();
   });
 });

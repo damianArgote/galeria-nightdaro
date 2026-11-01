@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { TIER_PLATFORMS } from "./tier";
 
+export const MAX_BENEFITS = 6;
+export const MAX_BENEFIT_LENGTH = 80;
+
 export const httpsUrlSchema = z.url({ protocol: /^https$/, error: "Usá un link https://" });
 
 export const tierFieldsSchema = z.object({
@@ -14,6 +17,18 @@ export const tierFieldsSchema = z.object({
     .regex(/^[A-Z]{3}$/, "Código de 3 letras, ej. USD")
     .default("USD"),
   url: httpsUrlSchema,
+  benefits: z
+    .array(
+      z
+        .string()
+        .trim()
+        .min(1, "Un beneficio no puede estar vacío")
+        .max(MAX_BENEFIT_LENGTH, `Hasta ${MAX_BENEFIT_LENGTH} caracteres por beneficio`),
+    )
+    .max(MAX_BENEFITS, `Hasta ${MAX_BENEFITS} beneficios`)
+    .default([]),
+  highlighted: z.boolean().default(false),
+  patreonTierId: z.string().trim().min(1).max(64).nullable().default(null),
 });
 
 export const CODE_PATTERN = /^[a-z0-9-]{3,32}$/;

@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { ARTWORK_KINDS, ARTWORK_RATINGS, ARTWORK_STATUSES } from "../core/artworks/artwork";
 import { TIER_PLATFORMS } from "../core/links/tier";
+import { PATREON_EVENT_KINDS } from "../core/patreon/patreon";
 import { MEDIA_STATUSES, MEDIA_TYPES } from "../core/media/media-asset";
 import type { SiteSeo, SiteSocials, SiteTheme } from "../core/site/site-settings";
 
@@ -106,9 +107,21 @@ export const tiers = pgTable(
     currency: text("currency").notNull().default("USD"),
     url: text("url").notNull(),
     position: integer("position").notNull().default(0),
+    benefits: text("benefits")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    highlighted: boolean("highlighted").notNull().default(false),
+    patreonTierId: text("patreon_tier_id"),
   },
   (t) => [
     uniqueIndex("tiers_platform_name_idx").on(t.platform, t.name),
+    // At most one highlighted tier.
+    // A Patreon tier is sold by at most one of our tiers.
+    uniqueIndex("tiers_patreon_tier_id_idx").on(t.patreonTierId),
+    uniqueIndex("tiers_single_highlight_idx")
+      .on(t.highlighted)
+      .where(sql`${t.highlighted}`),
     index("tiers_position_idx").on(t.position),
   ],
 );
@@ -138,4 +151,63 @@ export const events = pgTable(
     index("events_artwork_id_idx").on(t.artworkId),
     index("events_link_id_idx").on(t.linkId),
   ],
+);
+
+/**
+ * The site's single Patreon connection (row id 1). Tokens and the webhook secret are stored
+ * encrypted with AES-256-GCM (src/infra/patreon/token-cipher.ts), never in clear.
+ */
+export const patreonConnection = pgTable(
+  "patreon_connection",
+  {
+    id: integer("id").primaryKey().default(1),
+    campaignId: text("campaign_id").notNull(),
+    campaignUrl: text("campaign_url").notNull(),
+    accessToken: text("access_token").notNull(),
+    refreshToken: text("refresh_token").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    webhookId: text("webhook_id"),
+    webhookSecret: text("webhook_secret"),
+    connectedAt: timestamp("connected_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [check("patreon_connection_single_row", sql`${t.id} = 1`)],
+);
+
+/** Daro's tiers as Patreon reports them (names and prices for the Resumen and the panel). */
+export const patreonTiers = pgTable("patreon_tiers", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  url: text("url"),
+  position: integer("position").notNull().default(0),
+});
+
+/** Current state of each patron. Only Patreon's member id: never a name or an email. */
+export const patreonMembers = pgTable("patreon_members", {
+  id: text("id").primaryKey(),
+  status: text("status"),
+  amountCents: integer("amount_cents").notNull().default(0),
+  tierIds: text("tier_ids")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  pledgeStart: timestamp("pledge_start", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const patreonEventKind = pgEnum("patreon_event_kind", PATREON_EVENT_KINDS);
+
+/** One row per pledge webhook delivery; `key` makes Patreon's retries count once. */
+export const patreonEvents = pgTable(
+  "patreon_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    key: text("key").notNull().unique(),
+    kind: patreonEventKind("kind").notNull(),
+    memberId: text("member_id").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    patreonTierId: text("patreon_tier_id"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("patreon_events_kind_occurred_at_idx").on(t.kind, t.occurredAt)],
 );

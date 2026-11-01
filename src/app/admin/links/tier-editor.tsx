@@ -5,11 +5,13 @@ import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { TIER_PLATFORMS, type Tier } from "@/core/links/tier";
-import { tierFieldsSchema } from "@/core/links/link-schemas";
+import type { PatreonTier } from "@/core/patreon/patreon";
+import { MAX_BENEFIT_LENGTH, MAX_BENEFITS, tierFieldsSchema } from "@/core/links/link-schemas";
 import { applyFieldErrors } from "@/components/admin/apply-field-errors";
 import { FormField, selectClassName } from "@/components/admin/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { createTierAction, deleteTierAction, updateTierAction } from "./actions";
 
 const PLATFORM_LABELS: Record<Tier["platform"], string> = {
@@ -18,15 +20,44 @@ const PLATFORM_LABELS: Record<Tier["platform"], string> = {
   fansly: "Fansly",
 };
 
-/** The form edits the price in currency units; the use case stores cents. */
-const formSchema = tierFieldsSchema.omit({ priceCents: true, currency: true }).extend({
-  price: z.number({ error: "Ingresá un precio" }).min(0).max(10_000),
-  currency: z.string().trim(),
-});
+/** One benefit per line; blank lines are ignored. */
+const benefitLines = (text: string) =>
+  text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+/**
+ * The form edits the price in currency units (the use case stores cents) and the benefits as
+ * one per line; the use case schema validates them again on the server.
+ */
+const formSchema = tierFieldsSchema
+  .omit({ priceCents: true, currency: true, benefits: true, patreonTierId: true })
+  .extend({
+    /** "" means not linked. */
+    patreonTierId: z.string(),
+    price: z.number({ error: "Ingresá un precio" }).min(0).max(10_000),
+    currency: z.string().trim(),
+    benefitsText: z
+      .string()
+      .refine((text) => benefitLines(text).length <= MAX_BENEFITS, {
+        error: `Hasta ${MAX_BENEFITS} beneficios`,
+      })
+      .refine((text) => benefitLines(text).every((line) => line.length <= MAX_BENEFIT_LENGTH), {
+        error: `Hasta ${MAX_BENEFIT_LENGTH} caracteres por beneficio`,
+      }),
+  });
 type FormValues = z.input<typeof formSchema>;
 
 /** Edits an existing tier, or adds a new one when `tier` is not given. */
-export function TierEditor({ tier }: { tier?: Tier }) {
+export function TierEditor({
+  tier,
+  patreonTiers = [],
+}: {
+  tier?: Tier;
+  /** Daro's Patreon tiers, once Patreon is connected: the link can be fixed by hand. */
+  patreonTiers?: PatreonTier[];
+}) {
   const [error, setError] = useState<string>();
   const [deleting, startDelete] = useTransition();
   const id = (name: string) => `tier-${tier?.id ?? "new"}-${name}`;
@@ -36,6 +67,9 @@ export function TierEditor({ tier }: { tier?: Tier }) {
     price: 0,
     currency: "USD",
     url: "",
+    benefitsText: "",
+    highlighted: false,
+    patreonTierId: "",
   };
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -46,6 +80,9 @@ export function TierEditor({ tier }: { tier?: Tier }) {
           price: tier.priceCents / 100,
           currency: tier.currency,
           url: tier.url,
+          benefitsText: tier.benefits.join("\n"),
+          highlighted: tier.highlighted,
+          patreonTierId: tier.patreonTierId ?? "",
         }
       : emptyValues,
   });
@@ -55,15 +92,21 @@ export function TierEditor({ tier }: { tier?: Tier }) {
     formState: { errors, isSubmitting, isDirty },
   } = form;
 
-  const submit = handleSubmit(async ({ price, ...values }) => {
+  const submit = handleSubmit(async ({ price, benefitsText, patreonTierId, ...values }) => {
     setError(undefined);
-    const input = { ...values, priceCents: Math.round(price * 100) };
+    const input = {
+      ...values,
+      priceCents: Math.round(price * 100),
+      benefits: benefitLines(benefitsText),
+      patreonTierId: patreonTierId || null,
+    };
     const result = tier
       ? await updateTierAction({ id: tier.id, ...input })
       : await createTierAction(input);
     if (!result.ok) {
       setError(result.error);
-      applyFieldErrors(form.setError, result.fieldErrors);
+      const { benefits, ...fieldErrors } = result.fieldErrors ?? {};
+      applyFieldErrors(form.setError, { ...fieldErrors, benefitsText: benefits });
       return;
     }
     form.reset(tier ? undefined : emptyValues, { keepValues: !!tier });
@@ -114,6 +157,50 @@ export function TierEditor({ tier }: { tier?: Tier }) {
           {...register("url")}
         />
       </FormField>
+      <FormField
+        id={id("benefits")}
+        label={`Beneficios (uno por línea, hasta ${MAX_BENEFITS})`}
+        error={errors.benefitsText?.message}
+      >
+        <Textarea
+          id={id("benefits")}
+          rows={4}
+          placeholder={"Arte NSFW exclusivo\nAcceso anticipado"}
+          aria-invalid={!!errors.benefitsText}
+          {...register("benefitsText")}
+        />
+      </FormField>
+      <label className="flex items-center gap-2 text-sm font-bold">
+        <input
+          type="checkbox"
+          className="size-4 accent-brand-violet"
+          {...register("highlighted")}
+        />
+        Destacar como «El más elegido»
+        <span className="font-normal text-muted-foreground">
+          (solo uno: marcar este desmarca el anterior)
+        </span>
+      </label>
+      {patreonTiers.length > 0 && form.watch("platform") === "patreon" && (
+        <FormField
+          id={id("patreon-tier")}
+          label="Tier de Patreon (para contar sus altas)"
+          error={errors.patreonTierId?.message}
+        >
+          <select
+            id={id("patreon-tier")}
+            className={selectClassName}
+            {...register("patreonTierId")}
+          >
+            <option value="">Sin vincular</option>
+            {patreonTiers.map((patreonTier) => (
+              <option key={patreonTier.id} value={patreonTier.id}>
+                {patreonTier.title} · US${patreonTier.amountCents / 100}
+              </option>
+            ))}
+          </select>
+        </FormField>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex justify-end gap-2">
         {tier && (

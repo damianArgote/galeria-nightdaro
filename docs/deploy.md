@@ -17,10 +17,11 @@ Orden recomendado: Neon → Bunny → Sentry → Render → Cloudflare → verif
 ## 1. Neon (Postgres)
 
 1. Crear un proyecto en Neon (plan Free) con **Postgres 16**, en la región **AWS US East 1 (N. Virginia)**, la misma zona que el servicio de Render (`region: virginia`).
-2. En **Connect**, desactivar **Connection pooling** y copiar la cadena **directa**: el host **no** lleva `-pooler`. Tiene que terminar en `?sslmode=require`. Las migraciones necesitan la conexión directa, y con un único servidor de 5 conexiones no hace falta el pooler.
+2. En **Connect**, desactivar **Connection pooling** y copiar la cadena **directa**: el host **no** lleva `-pooler`. Las migraciones necesitan la conexión directa, y con un único servidor de 5 conexiones no hace falta el pooler.
+   Neon agrega `&channel_binding=require` al final: **hay que sacarlo**. El driver de la app (postgres.js) lo manda a Postgres como si fuera una opción y la conexión falla con `unrecognized configuration parameter "channel_binding"`. La cadena queda así: `postgresql://neondb_owner:<contraseña>@ep-…us-east-1.aws.neon.tech/neondb?sslmode=require`.
 3. Ese valor es `DATABASE_URL`.
 
-En el plan Free, la base se suspende tras unos minutos sin uso, así que la primera visita después de un rato tarda un poco más. Por eso el health check de Render no la consulta. Los backups (restauración a un punto en el tiempo) se configuran en **Branches**; probarlos es parte del Paso 11.
+En el plan Free, la base se suspende tras unos minutos sin uso, así que la primera visita después de un rato tarda un poco más. Por eso el health check de Render no la consulta. Los backups están en la sección 8.
 
 ## 2. Bunny Storage y CDN
 
@@ -109,3 +110,38 @@ Si el build falla porque Render instala las dependencias por su cuenta con otra 
    - Además, comprobá que **no se puede falsear**: copiá la cookie de sesión del navegador (`__Secure-authjs.session-token`) y corré `curl -s -H "CF-Connecting-IP: 1.2.3.4" -H "Cookie: __Secure-authjs.session-token=…" https://www.nightdaro.com/api/admin/ip-check`. `resolved` **no** puede ser `1.2.3.4`. Si lo es, el header no lo pisa Cloudflare y cualquiera podría saltear el rate limit: borrá `CLIENT_IP_HEADER` y avisá.
 6. Subir una imagen de prueba desde `/admin/subir`: tienen que aparecer `original.*` en `nightdaro-originals` y `thumb.webp` y `preview.webp` en `nightdaro-public`. La miniatura se ve en Galería, y la URL de la imagen vence en 1 hora.
 7. Un error forzado aparece en Sentry, sin IP ni cookies.
+
+## 8. Backups de Neon
+
+Neon guarda el historial de cambios de la base y permite volver a cualquier momento dentro de esa **ventana de historial** (*instant restore*). En el plan Free la ventana es de **6 horas**, y se ve en **Settings → Postgres → History window**.
+
+Esto tiene una consecuencia: un error que se descubre más de 6 horas después ya no se puede deshacer. Antes de algo riesgoso, como una migración que borra datos o una carga grande, conviene hacer una copia a mano:
+
+```bash
+pg_dump "$DATABASE_URL" --format=custom --file=nightdaro-$(date +%F).dump
+```
+
+### Probar la restauración (una vez, sin tocar producción)
+
+1. Anotar la hora actual, por ejemplo 14:00.
+2. En `/admin/pagina`, cambiar el texto de presentación y guardar.
+3. En Neon, entrar a **Backup & Restore**, elegir la rama principal (`production` o `main`, según cómo se llame en tu proyecto), poner la hora anotada y tocar **Restore**. En el aviso de confirmación, elegir **Preview data**, **no** Restore.
+4. En **Query data**, correr `select bio from site_settings;`: tiene que aparecer el texto **anterior** al cambio.
+5. Tocar **Cancel**, y en `/admin/pagina` volver a dejar el texto original.
+
+Si el paso 4 muestra el texto viejo, la restauración funciona. Para restaurar de verdad se hace lo mismo, pero se toca **Restore**. Neon guarda el estado actual en una rama `<rama>_old_<fecha>` por si hay que volver atrás, y la app no necesita cambios porque la cadena de conexión es la misma.
+
+| Fecha de la prueba | Quién | Resultado |
+| --- | --- | --- |
+| _pendiente_ | | |
+
+## 9. Patreon (opcional)
+
+1. Con la cuenta de Daro, entrar a https://www.patreon.com/portal/registration/register-clients y crear un cliente:
+   - **API version:** 2.
+   - **Redirect URIs:** `https://www.nightdaro.com/api/patreon/callback`, exacta.
+   - Nombre, descripción e ícono: libres. El dragón de `public/brand/` sirve.
+2. Patreon muestra el **Client ID** y el **Client Secret**. Van en Render (**Environment**) como `PATREON_CLIENT_ID` y `PATREON_CLIENT_SECRET`. Nunca se pegan en un chat ni en el repo.
+3. `PATREON_TOKEN_KEY` cifra los tokens guardados. Render lo genera solo (`generateValue`). Si no aparece después de sincronizar el Blueprint, cargar a mano cualquier texto aleatorio largo. Si se cambia, la conexión guardada ya no se puede leer y hay que volver a conectar.
+4. Redesplegar. En `/admin/links` aparece **Conectar Patreon**: Daro lo toca, acepta en Patreon y vuelve al panel con "Patreon quedó conectado".
+

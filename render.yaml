@@ -65,5 +65,13 @@ services:
         sync: false
       - key: SENTRY_DSN
         sync: false
+      # Patreon (Paso 12): the client registered at patreon.com/portal; the token key encrypts
+      # the stored tokens (AES-256-GCM). Without the client, the panel just says it is missing.
+      - key: PATREON_CLIENT_ID
+        sync: false
+      - key: PATREON_CLIENT_SECRET
+        sync: false
+      - key: PATREON_TOKEN_KEY
+        generateValue: true
       - key: CONTACT_EMAIL
         value: contacto@nightdaro.com

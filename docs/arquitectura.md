@@ -94,7 +94,7 @@ Siete tablas, sin `tenant_id`: la configuración del sitio es una sola fila.
 | `users` | id, email, password\_hash, created\_at | Daro y Dami |
 | `artworks` | id, slug, title, description, kind, rating, status, position, tags text\[\], published\_at | kind: finished, wip, timelapse; rating: sfw, suggestive, explicit; status: draft, published, hidden |
 | `media_assets` | id, artwork\_id, type, original\_key, preview\_key, thumb\_key, censored\_key, blur\_data, width, height, stream\_video\_id, status | El original vive en la zona privada |
-| `tiers` | id, platform, name, price\_cents, currency, url, position | platform: patreon, onlyfans, fansly |
+| `tiers` | id, platform, name, price\_cents, currency, url, position, benefits, highlighted | platform: patreon, onlyfans, fansly; benefits: hasta 6, de hasta 80 caracteres; como máximo un tier destacado (índice único parcial) |
 | `tracking_links` | id, code, target\_url, label, tier\_id | `/r/{code}` cuenta el clic |
 | `events` | id, type, artwork\_id, link\_id, session\_hash, referrer, country, created\_at | type: view, click, age\_ok; sin IP |
 
@@ -146,7 +146,12 @@ Las capturas de pantalla no se pueden impedir. La defensa real es que lo que cir
 
 - **Tiers:** la galería nunca enlaza directo; pasa por `/r/{code}`, que cuenta el clic.
 - **OnlyFans y Fansly:** Daro pega su tracking link como tier; los suscriptores se miran en el panel de cada plataforma.
-- **Patreon (paso opcional 12):** OAuth de solo lectura sobre la cuenta de Daro y webhooks de altas y bajas, para ver en el Resumen cuántos clics terminan en suscripción. Confirmar scopes y firma en [docs.patreon.com](https://docs.patreon.com).
+- **Patreon (paso 12):** OAuth 2 sobre la cuenta de Daro, verificado en [docs.patreon.com](https://docs.patreon.com) el 01/11/2026.
+  - **Scopes:** `campaigns` (campaña y tiers), `campaigns.members` (patrons, sin `[email]`), `campaigns.posts` (posts, solo lectura) y `w:campaigns.webhook`.
+  - **Webhook:** triggers `members:pledge:create`, `members:pledge:update`, `members:pledge:delete` y `posts:publish`. La firma llega en `X-Patreon-Signature`: es el HMAC **MD5** en hexadecimal del body crudo, con el `secret` que devuelve Patreon al crear el webhook. El evento llega en `X-Patreon-Event`.
+  - **Tokens:** los refresh tokens son de un solo uso, así que el refresh se hace una sola vez aunque lo pidan varias partes a la vez. El límite es de 100 pedidos por minuto por token, y Patreon exige un `User-Agent`.
+  - **Posts:** la API **no** permite crear ni editar posts, y el recurso Post no tiene un campo de imagen. Por eso un post nuevo llega a la galería como borrador para completar.
+  - **Datos:** los tokens y el secret del webhook se guardan cifrados con AES-256-GCM en `patreon_connection`. De los fans se guarda el id de miembro de Patreon, nunca nombre ni email.
 
 ## Deploy y costos
 
@@ -162,7 +167,7 @@ Un solo servicio en Render que despliega desde `main`.
 
 Total: unos US$9/mes. El plan gratis de Render no sirve porque el servicio se duerme y la primera visita tarda. El paso a paso está en `docs/deploy.md` y el servicio en `render.yaml`.
 
-Variables de entorno (en Render, nunca en el repo): `DATABASE_URL`, `AUTH_SECRET`, `BUNNY_STORAGE_KEY_ORIGINALS` y `BUNNY_STORAGE_KEY_PUBLIC` (o `BUNNY_STORAGE_KEY` si las dos zonas comparten clave), `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC`, `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_KEY` (firma del player), `BUNNY_STREAM_READONLY_KEY` (opcional, verifica el webhook de Stream), `ANALYTICS_SALT` (sal secreta del `session_hash`), `SITE_URL`, `SENTRY_DSN`.
+Variables de entorno (en Render, nunca en el repo): `DATABASE_URL`, `AUTH_SECRET`, `BUNNY_STORAGE_KEY_ORIGINALS` y `BUNNY_STORAGE_KEY_PUBLIC` (o `BUNNY_STORAGE_KEY` si las dos zonas comparten clave), `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC`, `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_KEY` (firma del player), `BUNNY_STREAM_READONLY_KEY` (opcional, verifica el webhook de Stream), `ANALYTICS_SALT` (sal secreta del `session_hash`), `SITE_URL`, `SENTRY_DSN`, y para Patreon `PATREON_CLIENT_ID`, `PATREON_CLIENT_SECRET` y `PATREON_TOKEN_KEY` (cifra los tokens guardados).
 
 ## Seguridad, puerta +18 y moderación
 

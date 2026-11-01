@@ -100,6 +100,69 @@ describe("tiers", () => {
   });
 });
 
+describe("tier benefits and highlight", () => {
+  it("stores trimmed benefits in order and defaults to none, not highlighted", async () => {
+    const plain = await new CreateTier(tiers).execute(tierInput);
+    expect(plain).toMatchObject({ benefits: [], highlighted: false });
+
+    const tier = await new CreateTier(tiers).execute({
+      ...tierInput,
+      name: "Support",
+      benefits: ["  Arte NSFW exclusivo ", "Acceso anticipado"],
+    });
+    expect((await tiers.findById(tier.id))?.benefits).toEqual([
+      "Arte NSFW exclusivo",
+      "Acceso anticipado",
+    ]);
+  });
+
+  it("rejects more than 6 benefits, a benefit over 80 characters and an empty one", async () => {
+    const create = new CreateTier(tiers);
+    await expect(
+      create.execute({ ...tierInput, benefits: Array.from({ length: 7 }, (_, i) => `B${i}`) }),
+    ).rejects.toBeInstanceOf(ZodError);
+    await expect(
+      create.execute({ ...tierInput, benefits: ["x".repeat(81)] }),
+    ).rejects.toBeInstanceOf(ZodError);
+    await expect(create.execute({ ...tierInput, benefits: ["  "] })).rejects.toBeInstanceOf(
+      ZodError,
+    );
+    expect(await tiers.list()).toEqual([]);
+  });
+
+  it("keeps a single highlighted tier: highlighting one clears the other", async () => {
+    const create = new CreateTier(tiers);
+    const support = await create.execute({ ...tierInput, name: "Support", highlighted: true });
+    const advanced = await create.execute({ ...tierInput, name: "Advanced support" });
+
+    await new UpdateTier(tiers).execute({ ...tierInput, ...advanced, highlighted: true });
+
+    expect((await tiers.findById(support.id))?.highlighted).toBe(false);
+    expect((await tiers.findById(advanced.id))?.highlighted).toBe(true);
+
+    await create.execute({ ...tierInput, name: "Tinta", highlighted: true });
+    expect((await tiers.list()).filter((t) => t.highlighted).map((t) => t.name)).toEqual(["Tinta"]);
+  });
+});
+
+describe("tier link to Patreon", () => {
+  it("rejects linking two tiers to the same Patreon tier, and allows unlinking", async () => {
+    const create = new CreateTier(tiers);
+    const a = await create.execute({ ...tierInput, name: "A", patreonTierId: "pt-5" });
+    await expect(
+      create.execute({ ...tierInput, name: "B", patreonTierId: "pt-5" }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    const b = await create.execute({ ...tierInput, name: "B" });
+    await expect(
+      new UpdateTier(tiers).execute({ ...tierInput, ...b, patreonTierId: "pt-5" }),
+    ).rejects.toMatchObject({ field: "patreonTierId" });
+
+    await new UpdateTier(tiers).execute({ ...tierInput, ...a, patreonTierId: null });
+    await new UpdateTier(tiers).execute({ ...tierInput, ...b, patreonTierId: "pt-5" });
+    expect((await tiers.findById(b.id))?.patreonTierId).toBe("pt-5");
+  });
+});
+
 describe("tracking links", () => {
   const linkInput = { label: "Bio de Instagram", targetUrl: "https://www.patreon.com/nightdaro" };
 

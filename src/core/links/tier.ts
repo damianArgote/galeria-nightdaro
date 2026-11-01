@@ -9,4 +9,10 @@ export interface Tier {
   currency: string;
   url: string;
   position: number;
+  /** Shown on /apoyar in this order. */
+  benefits: string[];
+  /** At most one tier is highlighted ("El más elegido"). */
+  highlighted: boolean;
+  /** The Patreon tier this one sells, once Patreon is connected; null otherwise. */
+  patreonTierId: string | null;
 }
