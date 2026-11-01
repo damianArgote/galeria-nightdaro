@@ -1,5 +1,6 @@
 // Composition root: wires core use cases to their infra adapters.
 import "server-only";
+import { sql } from "drizzle-orm";
 import { GetAnalyticsSummary } from "@/core/analytics/get-analytics-summary";
 import { RecordClick, RecordClientEvent } from "@/core/analytics/record-event";
 import { CreateArtwork } from "@/core/artworks/create-artwork";
@@ -91,6 +92,11 @@ function requireVideoPort() {
 }
 
 export const container = {
+  /** Health check: the database answers. */
+  async ping(): Promise<void> {
+    await getDb().execute(sql`select 1`);
+  },
+
   get authenticateAdmin() {
     return new AuthenticateAdmin(new DrizzleUserRepository(getDb()), passwordHasher);
   },

@@ -160,7 +160,7 @@ Un solo servicio en Render que despliega desde `main`.
 | Dominio, DNS y correo | Cloudflare | Free + Registrar | \~US$10/año |
 | Errores | Sentry | Developer | US$0 |
 
-Total: unos US$9/mes. El plan gratis de Render no sirve porque el servicio se duerme y la primera visita tarda.
+Total: unos US$9/mes. El plan gratis de Render no sirve porque el servicio se duerme y la primera visita tarda. El paso a paso está en `docs/deploy.md` y el servicio en `render.yaml`.
 
 Variables de entorno (en Render, nunca en el repo): `DATABASE_URL`, `AUTH_SECRET`, `BUNNY_STORAGE_KEY`, `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC`, `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY`, `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_KEY` (firma del player), `BUNNY_STREAM_READONLY_KEY` (opcional, verifica el webhook de Stream), `ANALYTICS_SALT` (sal secreta del `session_hash`), `SITE_URL`, `SENTRY_DSN`.
 
@@ -191,7 +191,7 @@ La migración completa (tabla `tenants`, `tenant_id` con default NightDaro, RLS,
 
 ## Decisiones abiertas
 
-- [ ] Dominio de NightDaro.
+- [x] Dominio de NightDaro: https://www.nightdaro.com (`nightdaro.com` redirige a `www`).
 - [x] URL de su Patreon: https://www.patreon.com/cw/Ndaro
 - [ ] Sus tiers reales.
 - [ ] Si se hace el paso 12 (Patreon) antes o después del lanzamiento.

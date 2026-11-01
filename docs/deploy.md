@@ -1,0 +1,106 @@
+# Deploy
+
+La galería corre como **un solo servicio en Render** (`render.yaml`), con Postgres en **Neon**, archivos y videos en **Bunny** y DNS y correo en **Cloudflare**. Dominio: **https://www.nightdaro.com**.
+
+Orden recomendado: Neon → Bunny → Sentry → Render → Cloudflare → verificación. Cada paso deja anotados los valores que después se cargan en Render.
+
+| Variable | De dónde sale |
+| --- | --- |
+| `DATABASE_URL` | Neon, cadena directa (paso 1) |
+| `BUNNY_STORAGE_HOST`, `BUNNY_ZONE_ORIGINALS`, `BUNNY_ZONE_PUBLIC`, `BUNNY_STORAGE_KEY_ORIGINALS`, `BUNNY_STORAGE_KEY_PUBLIC` | Bunny Storage (paso 2) |
+| `BUNNY_CDN_HOST`, `BUNNY_TOKEN_KEY` | Pull Zone de `public-media` (paso 2) |
+| `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_TOKEN_KEY`, `BUNNY_STREAM_READONLY_KEY` | Bunny Stream (paso 3) |
+| `SENTRY_DSN` | Sentry (paso 4) |
+| `AUTH_SECRET`, `ANALYTICS_SALT` | Render los genera solos (`generateValue`) |
+| `SITE_URL`, `AUTH_TRUST_HOST`, `STORAGE_DRIVER`, `CLIENT_IP_HEADER`, `CONTACT_EMAIL` | Ya vienen en `render.yaml` |
+
+## 1. Neon (Postgres)
+
+1. Crear un proyecto en Neon (plan Free) con **Postgres 16**, en la región **AWS US East 1 (N. Virginia)**, la misma zona que el servicio de Render (`region: virginia`).
+2. En **Connect**, desactivar **Connection pooling** y copiar la cadena **directa**: el host **no** lleva `-pooler`. Tiene que terminar en `?sslmode=require`. Las migraciones necesitan la conexión directa, y con un único servidor de 5 conexiones no hace falta el pooler.
+3. Ese valor es `DATABASE_URL`.
+
+En el plan Free, la base se suspende tras unos minutos sin uso, así que la primera visita después de un rato tarda un poco más. Los backups (restauración a un punto en el tiempo) se configuran en **Branches**; probarlos es parte del Paso 11.
+
+## 2. Bunny Storage y CDN
+
+### Zonas de almacenamiento
+
+1. **Storage → Add Storage Zone** → nombre `nightdaro-originals`, en la región principal más cercana al servicio (Nueva York). Sin replicación. **No se le crea Pull Zone**: los originales no tienen URL pública.
+2. Otra zona: `nightdaro-public`, en la misma región.
+3. En cada zona, **FTP & API Access** muestra su **Password**: la de `originals` es `BUNNY_STORAGE_KEY_ORIGINALS` y la de `public` es `BUNNY_STORAGE_KEY_PUBLIC`. Si fueran la misma, alcanza con `BUNNY_STORAGE_KEY`.
+4. `BUNNY_ZONE_ORIGINALS=nightdaro-originals` y `BUNNY_ZONE_PUBLIC=nightdaro-public`.
+5. `BUNNY_STORAGE_HOST` es el endpoint de la región de las zonas: `ny.storage.bunnycdn.com` para Nueva York o `storage.bunnycdn.com` para Falkenstein. Bunny lo muestra en **FTP & API Access**.
+
+### Pull Zone de `public-media`
+
+1. En `nightdaro-public`, **Connected Pull Zones → Add Pull Zone**, con origen la storage zone.
+2. **Security → Token Authentication**: activarlo. La clave que muestra es `BUNNY_TOKEN_KEY`. La app firma con el método avanzado (`HS256-…`), verificado contra los ejemplos oficiales de Bunny.
+3. **Security → Allowed referrers**: `nightdaro.com` y `www.nightdaro.com`.
+4. El hostname de la Pull Zone (por ejemplo `nightdaro-public.b-cdn.net`) es `BUNNY_CDN_HOST`, sin `https://`.
+
+## 3. Bunny Stream
+
+1. **Stream → Add Video Library** → `nightdaro`, que es la de producción, aparte de la de prueba.
+2. **Security**:
+   - activar **Embed view token authentication**; su clave es `BUNNY_STREAM_TOKEN_KEY`;
+   - en **Allowed domains**, `www.nightdaro.com` y `nightdaro.com`.
+3. **Player → Watermark**: subir el logo de NightDaro.
+4. **API**: el **Library ID** es `BUNNY_STREAM_LIBRARY_ID`, la **API Key** es `BUNNY_STREAM_API_KEY` y la **Read-only API Key** es `BUNNY_STREAM_READONLY_KEY`.
+5. **Webhooks** (opcional; el panel también consulta el estado solo): URL `https://www.nightdaro.com/api/webhooks/bunny-stream`.
+
+Con un token inválido, el embed de Bunny responde igual HTTP 200, pero con una página que dice "403" y sin player. Para probar la librería: `STREAM_LIVE=1 pnpm test:e2e timelapse-live`, apuntando con `.env.local` a la librería que se quiere probar.
+
+## 4. Sentry
+
+1. Crear un proyecto **Next.js** en Sentry (plan Developer). Su **DSN** es `SENTRY_DSN`; la app lo usa en el servidor y en el navegador.
+2. **Settings → Security & Privacy**: activar **Prevent Storing of IP Addresses** y **Data Scrubber**. La app ya no manda IPs, cookies ni usuarios (`src/sentry-options.ts`); esto es una segunda barrera.
+3. Session Replay queda **desactivado** a propósito: grabaría lo que ve cada visitante, incluido el arte +18.
+4. Opcional, para ver los stack traces con el código original: `SENTRY_ORG`, `SENTRY_PROJECT` y `SENTRY_AUTH_TOKEN` como variables de Render; con ellas, el build sube los source maps.
+
+## 5. Render
+
+1. **New → Blueprint**, elegir el repo `galeria-nightdaro`. Render lee `render.yaml` y pide los valores marcados `sync: false`: los de los pasos 1 a 4.
+2. Lo que hace cada deploy:
+   - **Build:** `corepack enable && pnpm install --frozen-lockfile && pnpm build`. Corepack instala el pnpm de `package.json#packageManager`, y Node es la versión de `.node-version` (22).
+   - **Pre-deploy:** `pnpm db:migrate`, que aplica las migraciones contra Neon antes de cambiar de versión.
+   - **Start:** `pnpm start`. Render da por sano el servicio cuando `GET /api/health` responde 200, que incluye un `select 1` a la base.
+3. **Auto-deploy:** `autoDeployTrigger: checksPass` despliega `main` solo cuando el CI de GitHub está en verde.
+4. **Seed inicial** (una sola vez): desde el **Shell** del servicio,
+
+   ```bash
+   corepack enable
+   SEED_DARO_EMAIL=... SEED_DARO_PASSWORD=... SEED_DAMI_EMAIL=... SEED_DAMI_PASSWORD=... pnpm db:seed
+   ```
+
+   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y los dos admins. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
+
+Si el build falla porque Render instala las dependencias por su cuenta con otra versión de pnpm, la variable `SKIP_INSTALL_DEPS=true` (ya está en `render.yaml`) lo evita. Es un workaround que propone la comunidad de Render, no documentación oficial.
+
+## 6. Cloudflare: DNS y correo
+
+### DNS
+
+1. **DNS → Records**:
+   - borrar los registros `AAAA` del dominio, porque Render no soporta IPv6;
+   - `CNAME` `@` → `galeria-nightdaro.onrender.com`;
+   - `CNAME` `www` → `galeria-nightdaro.onrender.com`.
+2. Los dos en **DNS only** (nube gris) para que Render verifique el dominio y emita el certificado. Conviene dejarlos así: con el proxy de Cloudflare se encadenan dos Cloudflare y hay que volver a validar de dónde sale la IP del visitante (sección 7).
+3. **SSL/TLS → Overview**: modo **Full**.
+4. En Render, **Settings → Custom Domains**: esperar a que `www.nightdaro.com` y `nightdaro.com` figuren como verificados con certificado. Render redirige `nightdaro.com` a `www`.
+
+### Email Routing
+
+1. **Email → Email Routing → Get started**: Cloudflare agrega los registros MX y SPF.
+2. **Destination addresses**: agregar el correo personal de Daro y confirmarlo desde el mail que llega.
+3. **Custom addresses**: `contacto@nightdaro.com` → ese destino. Es el contacto que muestra el pie de la galería (`CONTACT_EMAIL`).
+
+## 7. Verificación
+
+1. `curl https://www.nightdaro.com/api/health` responde `{"status":"ok"}`.
+2. `https://nightdaro.com` redirige a `https://www.nightdaro.com`, con candado válido.
+3. La portada muestra la puerta +18. En `/apoyar` aparecen los tres tiers del seed, y cada botón pasa por `/r/patreon-…` hasta Patreon.
+4. Entrar en `/login` con un admin del seed.
+5. **IP del visitante:** con la sesión iniciada, abrir `https://www.nightdaro.com/api/admin/ip-check`. `resolved` tiene que ser **tu IP pública** (comparala con cualquier sitio tipo "cuál es mi IP"). Si muestra una IP de Render o de Cloudflare, el rate limit del login y los visitantes únicos quedarían mal. Probá `CLIENT_IP_HEADER=true-client-ip` y volvé a mirar.
+6. Subir una imagen de prueba desde `/admin/subir`: tienen que aparecer `original.*` en `nightdaro-originals` y `thumb.webp` y `preview.webp` en `nightdaro-public`. La miniatura se ve en Galería, y la URL de la imagen vence en 1 hora.
+7. Un error forzado aparece en Sentry, sin IP ni cookies.
