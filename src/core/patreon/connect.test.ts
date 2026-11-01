@@ -101,6 +101,32 @@ describe("PatreonAccess", () => {
     expect((await connections.get())?.tokens.refreshToken).not.toBe("old-refresh");
   });
 
+  it("uses the token another caller already refreshed instead of burning the old refresh token", async () => {
+    await connected(new Date(NOW.getTime() + 60_000));
+    const access = new PatreonAccess(patreon, connections, () => NOW);
+    // Another process refreshed between our read and our refresh.
+    const realGet = connections.get.bind(connections);
+    let first = true;
+    connections.get = async () => {
+      const row = await realGet();
+      if (first) {
+        first = false;
+        await connections.save({
+          ...row!,
+          tokens: {
+            accessToken: "fresh-access",
+            refreshToken: "fresh-refresh",
+            expiresAt: new Date(NOW.getTime() + 3_600_000),
+          },
+        });
+      }
+      return row;
+    };
+
+    expect(await access.token()).toBe("fresh-access");
+    expect(patreon.calls).toEqual([]);
+  });
+
   it("fails clearly when Patreon is not connected", async () => {
     await expect(new PatreonAccess(patreon, connections, () => NOW).token()).rejects.toBeInstanceOf(
       PatreonNotConnectedError,

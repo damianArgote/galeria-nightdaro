@@ -91,7 +91,14 @@ function publicDeps() {
 
 /** Null while the Patreon client is not configured: the panel says so instead of failing. */
 function patreon() {
-  const setup = patreonSetup();
+  let setup: ReturnType<typeof patreonSetup>;
+  try {
+    setup = patreonSetup();
+  } catch (error) {
+    // Client set but PATREON_TOKEN_KEY or SITE_URL missing: only the Patreon panel says so.
+    console.error("Patreon is misconfigured", error);
+    return null;
+  }
   if (!setup) return null;
   const connections = new DrizzlePatreonConnectionRepository(getDb(), setup.cipher);
   return {

@@ -1,6 +1,7 @@
 import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:crypto";
 
 const VERSION = "v1";
+const TAG_LENGTH = 16;
 const b64 = (data: Buffer) => data.toString("base64url");
 
 /**
@@ -26,7 +27,9 @@ export class TokenCipher {
   decrypt(sealed: string): string {
     const [version, iv, tag, data] = sealed.split(".");
     if (version !== VERSION || !iv || !tag || !data) throw new Error("Not a sealed value");
-    const decipher = createDecipheriv("aes-256-gcm", this.key, Buffer.from(iv, "base64url"));
+    const decipher = createDecipheriv("aes-256-gcm", this.key, Buffer.from(iv, "base64url"), {
+      authTagLength: TAG_LENGTH,
+    });
     decipher.setAuthTag(Buffer.from(tag, "base64url"));
     return Buffer.concat([
       decipher.update(Buffer.from(data, "base64url")),

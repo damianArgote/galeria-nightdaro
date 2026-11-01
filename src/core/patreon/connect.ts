@@ -112,10 +112,19 @@ export class PatreonAccess {
   }
 
   private async refresh(refreshToken: string): Promise<string> {
+    // Another process may have refreshed since our read: its pair is the valid one now.
+    const latest = await this.connections.get();
+    if (!latest) throw new PatreonNotConnectedError();
+    if (latest.tokens.refreshToken !== refreshToken) return latest.tokens.accessToken;
+
     const tokens = await this.patreon.refresh(refreshToken);
-    const current = await this.connections.get();
-    if (!current) throw new PatreonNotConnectedError();
-    await this.connections.save({ ...current, tokens });
+    try {
+      await this.connections.save({ ...latest, tokens });
+    } catch (error) {
+      // The old refresh token is spent and the new one was not stored.
+      console.error("Patreon tokens refreshed but not saved: reconnect Patreon from the panel");
+      throw error;
+    }
     return tokens.accessToken;
   }
 }

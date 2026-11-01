@@ -22,6 +22,8 @@ describe("TokenCipher (AES-256-GCM)", () => {
     expect(() => cipher.decrypt(flipped)).toThrow();
     expect(() => new TokenCipher("another-secret-entirely").decrypt(sealed)).toThrow();
     expect(() => cipher.decrypt("plain-text")).toThrow();
+    // A truncated auth tag must not be accepted.
+    expect(() => cipher.decrypt(`${v}.${iv}.${tag!.slice(0, 6)}.${data}`)).toThrow();
   });
 
   it("refuses a short secret", () => {
