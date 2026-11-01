@@ -104,3 +104,36 @@ export class ResolvePublicMedia {
     return variant === "thumb" ? image.thumbUrl : image.previewUrl;
   }
 }
+
+/** Published artworks per tab for this audience (tab counters). */
+export class CountPublicGallery {
+  constructor(private readonly artworks: ArtworkRepository) {}
+
+  async execute(audience: Audience): Promise<Record<ArtworkKind, number>> {
+    const visible = await this.artworks.list({
+      status: "published",
+      ratings: allowedRatings(audience),
+    });
+    const counts: Record<ArtworkKind, number> = { finished: 0, wip: 0, timelapse: 0 };
+    for (const artwork of visible) counts[artwork.kind]++;
+    return counts;
+  }
+}
+
+/** Most used tags among the artworks this audience can see, most frequent first. */
+export class ListPublicTags {
+  constructor(private readonly artworks: ArtworkRepository) {}
+
+  async execute(audience: Audience, limit = 6): Promise<string[]> {
+    const visible = await this.artworks.list({
+      status: "published",
+      ratings: allowedRatings(audience),
+    });
+    const counts = new Map<string, number>();
+    for (const tag of visible.flatMap((a) => a.tags)) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "es"))
+      .slice(0, limit)
+      .map(([tag]) => tag);
+  }
+}

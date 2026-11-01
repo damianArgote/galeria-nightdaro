@@ -9,6 +9,10 @@ export interface SeedAdmin {
 
 // Daro's Patreon; the tiers are examples until the real ones are decided (see "Decisiones abiertas").
 const PATREON_URL = "https://www.patreon.com/cw/Ndaro";
+/** Presentation text of the visual reference; editable in /admin/pagina. */
+export const DEFAULT_BIO =
+  "Súcubos, chicas de Halloween y demonios de tinta. Acá ves los avances y los bocetos; las versiones completas, en alta resolución y sin censura, están en Patreon.";
+
 const EXAMPLE_TIERS = [
   { name: "Tier 1", priceCents: 500, position: 0 },
   { name: "Tier 2", priceCents: 1000, position: 1 },
@@ -23,6 +27,7 @@ export async function seed(db: Db, admins: SeedAdmin[]): Promise<void> {
     .values({
       id: 1,
       name: "NightDaro",
+      bio: DEFAULT_BIO,
       socials: {
         instagram: "https://www.instagram.com/nightdaro",
         x: "https://x.com/nightcrowller3",

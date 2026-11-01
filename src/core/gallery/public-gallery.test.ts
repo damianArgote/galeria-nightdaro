@@ -15,7 +15,13 @@ import { ListArtworkImages } from "../media/list-artwork-images";
 import { ListArtworkVideos } from "../media/list-artwork-videos";
 import type { ImageProcessor } from "../media/ports";
 import { UploadArtworkImage } from "../media/upload-artwork-image";
-import { GetPublicArtwork, ListPublicGallery, ResolvePublicMedia } from "./public-gallery";
+import {
+  CountPublicGallery,
+  GetPublicArtwork,
+  ListPublicGallery,
+  ListPublicTags,
+  ResolvePublicMedia,
+} from "./public-gallery";
 import { ListPublicTiers } from "./public-tiers";
 
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 1]);
@@ -88,6 +94,36 @@ describe("ListPublicGallery", () => {
       null,
     ]);
     expect(JSON.stringify(items)).not.toMatch(/nightdaro\/|token=|original/);
+  });
+});
+
+describe("CountPublicGallery and ListPublicTags", () => {
+  it("count and tag only what the audience can see", async () => {
+    const create = new CreateArtwork(artworks);
+    const publish = new PublishArtwork(artworks);
+    const items = [
+      { title: "A", kind: "finished", rating: "sfw", tags: ["tinta", "color"] },
+      { title: "B", kind: "finished", rating: "explicit", tags: ["tinta", "súcubo"] },
+      { title: "C", kind: "wip", rating: "sfw", tags: ["boceto", "tinta"] },
+    ] as const;
+    for (const item of items) {
+      const artwork = await create.execute({ ...item, tags: [...item.tags] });
+      await publish.execute({ id: artwork.id });
+    }
+    await create.execute({ title: "Borrador", kind: "timelapse", rating: "sfw", tags: ["oculta"] });
+
+    expect(await new CountPublicGallery(artworks).execute("sfw")).toEqual({
+      finished: 1,
+      wip: 1,
+      timelapse: 0,
+    });
+    expect(await new CountPublicGallery(artworks).execute("adult")).toEqual({
+      finished: 2,
+      wip: 1,
+      timelapse: 0,
+    });
+    expect(await new ListPublicTags(artworks).execute("sfw")).toEqual(["tinta", "boceto", "color"]);
+    expect(await new ListPublicTags(artworks).execute("adult", 2)).toEqual(["tinta", "boceto"]);
   });
 });
 

@@ -1,9 +1,12 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import Link from "next/link";
 import type { ArtworkKind } from "@/core/artworks/artwork";
 import type { Audience } from "@/core/gallery/audience";
 import { container } from "@/infra/container";
 import { cn } from "@/lib/utils";
 import { ArtworkGrid } from "./artwork-grid";
+import { ProtectionSection } from "./protection-section";
 
 const TABS: { kind: ArtworkKind; href: string; label: string; kanji: string }[] = [
   { kind: "finished", href: "/", label: "Terminado", kanji: "完成" },
@@ -20,13 +23,20 @@ const MARQUEE = [
   "EXCLUSIVO PATREON",
 ];
 
-/** One tab of the public gallery: hero, tabs (plain links) and the grid. */
+/** Banner of the visual reference, served from /public until the panel can upload one. */
+const BANNER = "/banner.jpg";
+const hasBanner = () => existsSync(join(process.cwd(), "public", BANNER));
+
+/** One tab of the public gallery: hero, tabs (plain links), the grid and how content is protected. */
 export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audience: Audience }) {
-  const [settings, artworks] = await Promise.all([
+  const [settings, artworks, counts, tags] = await Promise.all([
     container.getSiteSettings.execute(),
     container.listPublicGallery.execute({ kind, audience }),
+    container.countPublicGallery.execute(audience),
+    container.listPublicTags.execute(audience),
   ]);
   const [first, ...rest] = settings.name.toUpperCase().split(/(?=DARO)/);
+  const banner = hasBanner();
 
   return (
     <>
@@ -37,19 +47,50 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
         >
           夜の画廊
         </span>
-        <div className="relative z-[1] mx-auto max-w-[1180px] px-4 pt-14 pb-16">
-          <h1 className="my-3.5 font-display text-[clamp(38px,11vw,124px)] leading-none break-words [text-shadow:4px_4px_0_var(--brand-violet),8px_8px_0_var(--brand-sky),0_0_40px_#b14dff99]">
-            {first}
-            {rest.join("")}
-          </h1>
-          <span
-            aria-hidden
-            className="mb-5 block font-brush text-[clamp(18px,2.4vw,26px)] tracking-[0.5em] text-brand-green [text-shadow:0_0_14px_#39ff8899]"
-          >
-            ナイトダロ
-          </span>
+        {banner ? (
+          <div className="relative z-[1] mx-auto max-w-[1180px] px-4 pt-9 text-center">
+            <h1 className="sr-only">{settings.name}</h1>
+            {/* eslint-disable-next-line @next/next/no-img-element -- static banner, already sized */}
+            <img
+              src={BANNER}
+              alt={`${settings.name}: ilustración anime, tinta y fantasía +18`}
+              width={1600}
+              height={685}
+              draggable={false}
+              className="protected mx-auto block h-auto w-full rounded-md border-[3px] border-black shadow-[8px_8px_0_#000,0_0_60px_-10px_var(--brand-violet),0_0_90px_-30px_var(--brand-sky)]"
+            />
+            <span
+              aria-hidden
+              className="mt-3.5 block font-brush text-[clamp(18px,2.4vw,26px)] tracking-[0.5em] text-brand-green [text-shadow:0_0_14px_#39ff8899]"
+            >
+              夜の画廊 · ナイトダロ
+            </span>
+          </div>
+        ) : null}
+        <div
+          className={cn(
+            "relative z-[1] mx-auto max-w-[1180px] px-4 pb-16",
+            banner ? "pt-9" : "pt-14",
+          )}
+        >
+          {!banner && (
+            <>
+              <h1 className="my-3.5 font-display text-[clamp(38px,11vw,124px)] leading-none break-words [text-shadow:4px_4px_0_var(--brand-violet),8px_8px_0_var(--brand-sky),0_0_40px_#b14dff99]">
+                {first}
+                {rest.join("")}
+              </h1>
+              <span
+                aria-hidden
+                className="mb-5 block font-brush text-[clamp(18px,2.4vw,26px)] tracking-[0.5em] text-brand-green [text-shadow:0_0_14px_#39ff8899]"
+              >
+                ナイトダロ
+              </span>
+            </>
+          )}
           {settings.bio && (
-            <p className="mb-6 max-w-[52ch] text-lg text-[#d5d9ee]">{settings.bio}</p>
+            <p className="mb-6 max-w-[52ch] text-lg text-[#d5d9ee]" data-testid="hero-bio">
+              {settings.bio}
+            </p>
           )}
           <div className="flex flex-wrap gap-3">
             <Link href="/apoyar" className="gallery-cta px-5 py-3">
@@ -62,6 +103,22 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
               Ver la galería
             </a>
           </div>
+          {tags.length > 0 && (
+            <ul
+              className="mt-6 flex flex-wrap gap-2"
+              aria-label="Etiquetas"
+              data-testid="hero-tags"
+            >
+              {tags.map((tag) => (
+                <li
+                  key={tag}
+                  className="rounded-full border border-[#2e2470] px-2.5 py-1 font-label text-xs text-[#aaa4d8]"
+                >
+                  {tag}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </section>
 
@@ -120,6 +177,12 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
                     {tab.kanji}
                   </span>
                   {tab.label}
+                  <span
+                    className="ml-1.5 font-label text-[11px] opacity-70"
+                    data-testid={`count-${tab.kind}`}
+                  >
+                    {counts[tab.kind]}
+                  </span>
                 </Link>
               ))}
             </nav>
@@ -127,6 +190,7 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
           <ArtworkGrid artworks={artworks} />
         </div>
       </section>
+      <ProtectionSection />
     </>
   );
 }

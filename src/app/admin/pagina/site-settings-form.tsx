@@ -72,7 +72,7 @@ export function SiteSettingsForm({ settings }: { settings: SiteSettings }) {
       <Panel>
         <PanelHeader
           title="Banner y textos"
-          description="El banner se sube junto con las imágenes, en el próximo paso."
+          description="Por ahora la página usa el banner del diseño; la subida desde acá está en la deuda técnica (docs/deuda-tecnica.md)."
         />
         <div
           aria-hidden

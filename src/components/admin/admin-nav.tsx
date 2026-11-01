@@ -4,36 +4,76 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const ITEMS = [
-  { href: "/admin", label: "Resumen" },
-  { href: "/admin/subir", label: "Subir" },
-  { href: "/admin/galeria", label: "Galería" },
-  { href: "/admin/pagina", label: "Página" },
-  { href: "/admin/links", label: "Links" },
-];
+export const ADMIN_SECTIONS = [
+  { href: "/admin", label: "Resumen", title: "Resumen", kanji: "概要" },
+  { href: "/admin/subir", label: "Subir", title: "Subir contenido", kanji: "投稿" },
+  { href: "/admin/galeria", label: "Galería", title: "Galería", kanji: "画廊" },
+  { href: "/admin/pagina", label: "Página", title: "Página pública", kanji: "編集" },
+  { href: "/admin/links", label: "Links", title: "Tiers y links", kanji: "支援" },
+] as const;
 
+/** Sidebar menu of the studio mockup: brush kanji per section, active item on paper. */
 export function AdminNav() {
   const pathname = usePathname();
 
   return (
-    <ul className="flex flex-row gap-1 md:flex-col">
-      {ITEMS.map((item) => {
+    <ul className="flex flex-row gap-1.5 overflow-x-auto pb-1 md:flex-col md:overflow-visible md:pb-0">
+      {ADMIN_SECTIONS.map((item) => {
         const active = pathname === item.href;
         return (
-          <li key={item.href}>
+          <li key={item.href} className="flex-none">
             <Link
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "block rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent",
-                active && "bg-sidebar-accent font-semibold text-brand-green",
+                "grid grid-cols-[auto_1fr] items-center gap-2.5 rounded-sm border-2 border-transparent px-3 py-2 font-bold text-muted-foreground hover:border-border hover:text-foreground md:grid-cols-[40px_1fr]",
+                active &&
+                  "border-black bg-paper text-brand-ink shadow-[4px_4px_0_var(--brand-violet)] hover:text-brand-ink",
               )}
             >
+              <span
+                aria-hidden
+                className={cn(
+                  "text-center font-brush text-[17px] whitespace-nowrap",
+                  active ? "text-brand-ink" : "text-foreground/70",
+                )}
+              >
+                {item.kanji}
+              </span>
               {item.label}
             </Link>
           </li>
         );
       })}
     </ul>
+  );
+}
+
+/** Sticky top bar: the section title and how changes are saved. */
+export function AdminTopbar() {
+  const pathname = usePathname();
+  const section = ADMIN_SECTIONS.find((s) => s.href === pathname) ?? ADMIN_SECTIONS[0];
+
+  return (
+    <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-brand-ink/90 px-4 py-3.5 backdrop-blur md:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <h1 className="font-display text-[clamp(22px,3vw,30px)] leading-tight">{section.title}</h1>
+        <span className="hidden items-center gap-2 font-mono text-xs text-muted-foreground sm:inline-flex">
+          <i
+            aria-hidden
+            className="size-2 rounded-full bg-brand-green shadow-[0_0_8px_var(--brand-green)]"
+          />
+          Los cambios se guardan al instante
+        </span>
+      </div>
+      <a
+        href="/"
+        target="_blank"
+        rel="noreferrer"
+        className="rounded-full border-[1.5px] border-border px-3 py-1.5 text-xs font-bold hover:border-brand-sky"
+      >
+        Ver página pública ↗
+      </a>
+    </div>
   );
 }

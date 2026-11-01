@@ -15,6 +15,10 @@
   --color-brand-sky: var(--brand-sky);
   --color-brand-green: var(--brand-green);
   --color-brand-indigo: var(--brand-indigo);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-panel: var(--brand-panel);
+  --color-brand-panel-2: var(--brand-panel-2);
+  --color-brand-line: var(--brand-line);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
@@ -59,43 +63,49 @@
 }
 
 :root {
-  /* Brand palette: neon violet (primary), sky blue (secondary), neon green (details), indigo night (background). */
-  --brand-violet: oklch(0.66 0.28 302);
-  --brand-sky: oklch(0.82 0.13 220);
-  --brand-green: oklch(0.86 0.22 146);
-  --brand-indigo: oklch(0.17 0.07 282);
+  /* Values from the visual references (gallery and studio mockups). */
+  --brand-violet: #b14dff;
+  --brand-sky: #22e4ff;
+  --brand-green: #39ff88;
+  --brand-indigo: #150b42;
+  --brand-ink: #07041a;
+  --brand-panel: #120c33;
+  --brand-panel-2: #0d0828;
+  --brand-line: #2e2470;
+  --brand-paper: #f3eee6;
+  --brand-muted: #aaa4d8;
 
-  --background: var(--brand-indigo);
-  --foreground: oklch(0.96 0.02 295);
-  --card: oklch(0.22 0.08 282);
-  --card-foreground: oklch(0.96 0.02 295);
-  --popover: oklch(0.22 0.08 282);
-  --popover-foreground: oklch(0.96 0.02 295);
+  --background: var(--brand-ink);
+  --foreground: var(--brand-paper);
+  --card: var(--brand-panel);
+  --card-foreground: var(--brand-paper);
+  --popover: var(--brand-panel);
+  --popover-foreground: var(--brand-paper);
   --primary: var(--brand-violet);
-  --primary-foreground: oklch(0.98 0.01 300);
+  --primary-foreground: #0a0420;
   --secondary: var(--brand-sky);
-  --secondary-foreground: oklch(0.17 0.07 282);
-  --muted: oklch(0.26 0.07 282);
-  --muted-foreground: oklch(0.76 0.05 290);
+  --secondary-foreground: #00222a;
+  --muted: var(--brand-panel-2);
+  --muted-foreground: var(--brand-muted);
   --accent: var(--brand-green);
-  --accent-foreground: oklch(0.17 0.07 282);
-  --destructive: oklch(0.65 0.23 22);
-  --border: oklch(0.66 0.28 302 / 25%);
-  --input: oklch(0.66 0.28 302 / 30%);
+  --accent-foreground: #04210c;
+  --destructive: #ff5d6c;
+  --border: var(--brand-line);
+  --input: var(--brand-line);
   --ring: var(--brand-violet);
   --chart-1: var(--brand-violet);
   --chart-2: var(--brand-sky);
   --chart-3: var(--brand-green);
-  --chart-4: oklch(0.75 0.18 330);
-  --chart-5: oklch(0.6 0.15 265);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.14 0.06 282);
-  --sidebar-foreground: oklch(0.96 0.02 295);
+  --chart-4: #ff4fd8;
+  --chart-5: #2a5cff;
+  --radius: 0.375rem;
+  --sidebar: var(--brand-indigo);
+  --sidebar-foreground: var(--brand-paper);
   --sidebar-primary: var(--brand-violet);
-  --sidebar-primary-foreground: oklch(0.98 0.01 300);
-  --sidebar-accent: oklch(0.26 0.07 282);
-  --sidebar-accent-foreground: oklch(0.96 0.02 295);
-  --sidebar-border: oklch(0.66 0.28 302 / 25%);
+  --sidebar-primary-foreground: #0a0420;
+  --sidebar-accent: var(--brand-panel);
+  --sidebar-accent-foreground: var(--brand-paper);
+  --sidebar-border: var(--brand-line);
   --sidebar-ring: var(--brand-violet);
 }
 
@@ -142,4 +152,16 @@
   to {
     transform: translateX(-50%);
   }
+}
+
+/* Gallery deterrents: protected art cannot be selected or dragged, and blurs while shielded. */
+.protected,
+.protected * {
+  user-select: none;
+  -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+}
+html.shielded .protected {
+  filter: blur(28px) brightness(0.5);
+  transition: filter 0.15s;
 }

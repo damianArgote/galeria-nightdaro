@@ -93,6 +93,23 @@ function ProtectedImage({
   );
 }
 
+const WATERMARK = "NIGHTDARO · @nightdaro · vista previa · ".repeat(4);
+
+/** Text watermark over every card, like the mockup; the image itself is watermarked too. */
+function Watermark() {
+  return (
+    <div
+      aria-hidden
+      data-testid="card-watermark"
+      className="pointer-events-none absolute inset-0 z-[1] scale-[1.6] -rotate-[24deg] overflow-hidden text-center font-label text-[11px] leading-[3.2] whitespace-nowrap text-white opacity-[0.22]"
+    >
+      {Array.from({ length: 24 }, (_, i) => (
+        <div key={i}>{WATERMARK}</div>
+      ))}
+    </div>
+  );
+}
+
 export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
   const [open, setOpen] = useState<PublicArtwork | null>(null);
 
@@ -110,7 +127,7 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
   return (
     <>
       <ul
-        className="grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-[22px]"
+        className="protected grid grid-cols-[repeat(auto-fill,minmax(230px,1fr))] gap-[22px]"
         onContextMenu={(event) => event.preventDefault()}
       >
         {artworks.map((artwork, index) => (
@@ -135,6 +152,7 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
                 >
                   第{NUMERALS[index % 10]}話
                 </span>
+                <Watermark />
                 {artwork.kind === "timelapse" && (
                   <span aria-hidden className="absolute inset-0 grid place-items-center">
                     <span className="grid size-14 place-items-center rounded-full border-2 border-paper bg-black/60">
@@ -200,7 +218,7 @@ function Lightbox({ artwork, onClose }: { artwork: PublicArtwork; onClose: () =>
           {artwork.title}
         </h2>
         <div
-          className="relative mb-4 aspect-[4/5] overflow-hidden rounded-xl border-2 border-black"
+          className="protected relative mb-4 aspect-[4/5] overflow-hidden rounded-xl border-2 border-black"
           onContextMenu={(event) => event.preventDefault()}
         >
           {artwork.kind === "timelapse" && artwork.hasVideo ? (
