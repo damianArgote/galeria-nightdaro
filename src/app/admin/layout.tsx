@@ -18,12 +18,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     >
       <aside className="flex min-w-0 flex-col gap-5 border-b-[3px] border-black bg-gradient-to-b from-[#150b42] to-[#07041a] p-4 shadow-[0_4px_0_var(--brand-violet)] md:sticky md:top-0 md:h-dvh md:border-r-[3px] md:border-b-0 md:shadow-[4px_0_0_var(--brand-violet)]">
         <div className="flex items-center gap-3">
-          <span
-            aria-hidden
-            className="grid size-[52px] flex-none -rotate-8 place-items-center rounded-[7px] border-[3px] border-brand-hanko bg-[#ff4fd814] font-brush text-lg leading-none text-brand-hanko [writing-mode:vertical-rl]"
-          >
-            夜達
-          </span>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static SVG, no optimization needed */}
+          <img
+            src="/brand/dragon.svg"
+            alt=""
+            width={52}
+            height={52}
+            className="size-[52px] flex-none rounded-[7px] border-[3px] border-black bg-[#07041a] p-1 shadow-[3px_3px_0_#000]"
+          />
           <div>
             <p className="font-display text-lg leading-none whitespace-nowrap">
               NIGHT<b className="font-normal text-brand-violet">DARO</b>
