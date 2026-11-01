@@ -106,9 +106,18 @@ export const tiers = pgTable(
     currency: text("currency").notNull().default("USD"),
     url: text("url").notNull(),
     position: integer("position").notNull().default(0),
+    benefits: text("benefits")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    highlighted: boolean("highlighted").notNull().default(false),
   },
   (t) => [
     uniqueIndex("tiers_platform_name_idx").on(t.platform, t.name),
+    // At most one highlighted tier.
+    uniqueIndex("tiers_single_highlight_idx")
+      .on(t.highlighted)
+      .where(sql`${t.highlighted}`),
     index("tiers_position_idx").on(t.position),
   ],
 );

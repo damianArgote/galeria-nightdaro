@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { NotFoundError } from "../shared/errors";
-import { assertTierNameFree } from "./link-code";
+import { assertTierNameFree, clearOtherHighlights } from "./link-code";
 import type { TierRepository, TrackingLinkRepository } from "./link-repositories";
 import { tierFieldsSchema } from "./link-schemas";
 import type { Tier } from "./tier";
@@ -22,6 +22,7 @@ export class UpdateTier {
     await assertTierNameFree(this.tiers, { ...fields, ownId: id });
 
     const updated: Tier = { ...current, ...fields };
+    if (updated.highlighted) await clearOtherHighlights(this.tiers, id);
     await this.tiers.save(updated);
     if (this.links && updated.url !== current.url) {
       for (const link of await this.links.list()) {

@@ -104,4 +104,43 @@ test.describe("admin panel", () => {
     // The seed links its three example tiers, the VIP tier gets its own, plus the manual one.
     await expect(page.getByTestId("tracking-link")).toHaveCount(5);
   });
+
+  test("tier benefits and the single highlight show on /apoyar", async ({ page }) => {
+    await page.goto("/admin/links");
+    const tier2 = page.getByTestId("tier").nth(1);
+    await tier2.getByLabel(/Beneficios/).fill("Arte NSFW exclusivo\n\n  Acceso anticipado  ");
+    await tier2.getByLabel(/Destacar/).check();
+    await tier2.getByRole("button", { name: "Guardar" }).click();
+    await expect(tier2.getByRole("button", { name: "Guardar" })).toBeDisabled();
+
+    // Highlighting another tier clears the first one, without reloading the panel.
+    const tier3 = page.getByTestId("tier").nth(2);
+    await tier3.getByLabel(/Destacar/).check();
+    await tier3.getByRole("button", { name: "Guardar" }).click();
+    await expect(
+      page
+        .getByTestId("tier")
+        .nth(1)
+        .getByLabel(/Destacar/),
+    ).not.toBeChecked();
+    await expect(
+      page
+        .getByTestId("tier")
+        .nth(2)
+        .getByLabel(/Destacar/),
+    ).toBeChecked();
+
+    const tooMany = page.getByTestId("tier").nth(0);
+    await tooMany.getByLabel(/Beneficios/).fill("1\n2\n3\n4\n5\n6\n7");
+    await tooMany.getByRole("button", { name: "Guardar" }).click();
+    await expect(tooMany.getByText("Hasta 6 beneficios")).toBeVisible();
+
+    await page.goto("/apoyar");
+    const cards = page.getByTestId("tier-card");
+    await expect(
+      cards.filter({ hasText: "Tier 2" }).getByTestId("tier-benefits").getByRole("listitem"),
+    ).toHaveText(["✦Arte NSFW exclusivo", "✦Acceso anticipado"]);
+    await expect(cards.filter({ hasText: "El más elegido" })).toHaveCount(1);
+    await expect(cards.filter({ hasText: "El más elegido" })).toContainText("Tier 3");
+  });
 });

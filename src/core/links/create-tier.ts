@@ -1,5 +1,5 @@
 import type { z } from "zod";
-import { assertTierNameFree, randomCode } from "./link-code";
+import { assertTierNameFree, clearOtherHighlights, randomCode } from "./link-code";
 import type { TierRepository, TrackingLinkRepository } from "./link-repositories";
 import { tierFieldsSchema } from "./link-schemas";
 import type { Tier } from "./tier";
@@ -33,6 +33,7 @@ export class CreateTier {
       id: this.newId(),
       position: existing.reduce((max, t) => Math.max(max, t.position + 1), 0),
     };
+    if (tier.highlighted) await clearOtherHighlights(this.tiers, tier.id);
     await this.tiers.save(tier);
     if (this.links) {
       let code = randomCode();
