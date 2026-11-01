@@ -32,7 +32,7 @@ Galería pública y panel de administración de NightDaro en una sola app Next.j
    docker compose up -d
    ```
 
-4. Crear las tablas y cargar los datos iniciales (completar antes `SEED_DARO_*` y `SEED_DAMI_*` en `.env.local`; `SEED_ADMIN3_*` es opcional):
+4. Crear las tablas y cargar los datos iniciales (completar antes `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD` en `.env.local`):
 
    ```bash
    pnpm db:migrate
