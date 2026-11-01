@@ -91,7 +91,7 @@ Siete tablas, sin `tenant_id`: la configuración del sitio es una sola fila.
 | Tabla | Campos clave | Notas |
 | --- | --- | --- |
 | `site_settings` | id (siempre 1), name, bio, banner\_media\_id, theme jsonb, socials jsonb, age\_gate\_enabled, seo jsonb | Lo que se edita en Página pública |
-| `users` | id, email, password\_hash, created\_at | Daro y Dami |
+| `users` | id, username, email, password\_hash, role, must\_change\_password, disabled\_at, session\_version, created\_at | role: owner (gestiona admins) o admin; email solo en admins anteriores a los usernames, que pueden seguir entrando con él |
 | `artworks` | id, slug, title, description, kind, rating, status, position, tags text\[\], published\_at | kind: finished, wip, timelapse; rating: sfw, suggestive, explicit; status: draft, published, hidden |
 | `media_assets` | id, artwork\_id, type, original\_key, preview\_key, thumb\_key, censored\_key, blur\_data, width, height, stream\_video\_id, status | El original vive en la zona privada |
 | `tiers` | id, platform, name, price\_cents, currency, url, position, benefits, highlighted | platform: patreon, onlyfans, fansly; benefits: hasta 6, de hasta 80 caracteres; como máximo un tier destacado (índice único parcial) |
@@ -137,10 +137,11 @@ Las capturas de pantalla no se pueden impedir. La defensa real es que lo que cir
 
 ## Acceso al panel
 
-- Auth.js v5 con credenciales; contraseñas con argon2id; solo los usuarios del seed, sin registro.
-- Sesión en cookie `httpOnly` y `Secure` de 30 días; el middleware bloquea `/admin` sin sesión.
-- Rate limit de 5 intentos por minuto en el login.
-- Un solo rol (admin): Daro y Dami pueden todo.
+- Auth.js v5 con credenciales: usuario (o el email de un admin anterior a los usernames) y contraseña con argon2id. Sin registro: el dueño crea a los demás admins.
+- Roles: **dueño** (crea, resetea y desactiva admins) y **admin** (usa el panel). El seed crea al dueño.
+- Un admin nuevo o reseteado recibe una **contraseña temporal**: hasta que elige la suya en `/cambiar-clave`, el panel queda bloqueado. La nueva tiene al menos 12 caracteres.
+- Sesión en cookie `httpOnly` y `Secure` de 30 días; el middleware bloquea `/admin` sin sesión. Además, `requireAdmin()` lee al admin en cada pedido y compara su `session_version`: desactivarlo, resetearle la contraseña o cambiarla corta sus sesiones al instante.
+- Rate limit de 5 intentos por minuto por IP en el login.
 
 ## Integraciones
 

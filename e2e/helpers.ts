@@ -1,17 +1,16 @@
 import { expect, type Page } from "@playwright/test";
 import sharp from "sharp";
+import { seedAdminsFromEnv } from "@/db/seed-admins";
 
+/** The seeded owner, from SEED_ADMIN_USERNAME (or SEED_ADMIN_EMAIL) and SEED_ADMIN_PASSWORD. */
 export function adminCredentials() {
-  const email = process.env.SEED_ADMIN_EMAIL;
-  const password = process.env.SEED_ADMIN_PASSWORD;
-  if (!email || !password) throw new Error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD are required");
-  return { email, password };
+  return seedAdminsFromEnv(process.env)[0]!;
 }
 
 export async function signIn(page: Page) {
-  const { email, password } = adminCredentials();
+  const { username, password } = adminCredentials();
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Usuario").fill(username);
   await page.getByLabel("Contraseña").fill(password);
   await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page).toHaveURL(/\/admin$/);

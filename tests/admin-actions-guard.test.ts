@@ -7,8 +7,18 @@ import { describe, expect, it } from "vitest";
  * Middleware only redirects pages; a Server Action can be invoked by POSTing to any route.
  * requireAdmin() is the real guard, so every admin Server Action must start with it.
  */
-const ADMIN_DIR = "src/app/admin";
-const ALLOWED_WITHOUT_GUARD = new Set(["src/app/admin/actions.ts#logout"]);
+/** Every Server Action under src/app, so an action added outside /admin is checked too. */
+const APP_DIR = "src/app";
+/** Public on purpose: they run without an admin session. */
+const ALLOWED_WITHOUT_GUARD = new Set([
+  "src/app/admin/actions.ts#logout",
+  "src/app/login/actions.ts#login",
+  "src/app/g/actions.ts#acceptAgeGate",
+  // Only clears the cookie; the session already ended when the password changed.
+  "src/app/cambiar-clave/actions.ts#finishPasswordChange",
+]);
+/** Its FormData goes to Auth.js signIn, and AuthenticateAdmin validates it with Zod. */
+const VALIDATED_ELSEWHERE = new Set(["src/app/login/actions.ts#login"]);
 
 function serverActionFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -54,6 +64,8 @@ function exportedActions(file: string, text = readFileSync(file, "utf8")) {
       .getModifiers(statement as ts.HasModifiers)
       ?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
     if (!exported) continue;
+    // Types are erased at build time: they are not callable actions.
+    if (ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)) continue;
     if (!ts.isFunctionDeclaration(statement) || !statement.name) {
       // Anything else exported from a "use server" file could bypass the check.
       actions.push({
@@ -64,12 +76,18 @@ function exportedActions(file: string, text = readFileSync(file, "utf8")) {
       continue;
     }
     const first = statement.body?.statements[0];
+    // `await requireAdmin(...)` or `const admin = await requireAdmin(...)`, as the first statement.
+    const awaited =
+      first && ts.isExpressionStatement(first)
+        ? first.expression
+        : first && ts.isVariableStatement(first)
+          ? first.declarationList.declarations[0]?.initializer
+          : undefined;
     const guarded =
-      !!first &&
-      ts.isExpressionStatement(first) &&
-      ts.isAwaitExpression(first.expression) &&
-      ts.isCallExpression(first.expression.expression) &&
-      first.expression.expression.expression.getText(source) === "requireAdmin";
+      !!awaited &&
+      ts.isAwaitExpression(awaited) &&
+      ts.isCallExpression(awaited.expression) &&
+      awaited.expression.expression.getText(source) === "requireAdmin";
     actions.push({
       name: statement.name.text,
       guarded,
@@ -125,13 +143,13 @@ describe("admin route handlers", () => {
 });
 
 describe("admin Server Actions", () => {
-  const files = serverActionFiles(ADMIN_DIR);
+  const files = serverActionFiles(APP_DIR);
 
-  it("finds the admin action files", () => {
-    expect(files.length).toBeGreaterThanOrEqual(4);
+  it("finds the Server Action files", () => {
+    expect(files.length).toBeGreaterThanOrEqual(7);
   });
 
-  it("all start with `await requireAdmin()`", () => {
+  it("all start with `await requireAdmin()`, except the public ones", () => {
     const unguarded = files.flatMap((file) =>
       exportedActions(file)
         .filter((a) => !a.guarded && !ALLOWED_WITHOUT_GUARD.has(`${file}#${a.name}`))
@@ -143,7 +161,7 @@ describe("admin Server Actions", () => {
   it("validate their input with Zod through runAction(schema, input)", () => {
     const unvalidated = files.flatMap((file) =>
       exportedActions(file)
-        .filter((a) => !a.validated)
+        .filter((a) => !a.validated && !VALIDATED_ELSEWHERE.has(`${file}#${a.name}`))
         .map((a) => `${file}#${a.name}`),
     );
     expect(unvalidated).toEqual([]);

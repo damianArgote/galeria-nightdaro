@@ -1,10 +1,10 @@
-import { requireAdmin } from "@/auth";
+import { requireAdminPage } from "@/auth";
 import { ViewHeader } from "@/components/admin/panel";
 import { container } from "@/infra/container";
 import { SiteSettingsForm } from "./site-settings-form";
 
 export default async function SitePage() {
-  await requireAdmin();
+  await requireAdminPage();
   const settings = await container.getSiteSettings.execute();
 
   return (

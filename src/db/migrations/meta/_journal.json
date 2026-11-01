@@ -43,6 +43,13 @@
       "when": 1793567539317,
       "tag": "0005_patreon_webhook",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793573431944,
+      "tag": "0006_admin_usernames",
+      "breakpoints": true
     }
   ]
 }

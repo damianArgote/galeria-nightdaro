@@ -12,7 +12,9 @@ describe.skipIf(!databaseUrl)("admin login against Postgres", () => {
   beforeAll(async () => {
     testDb = await createTestDb("login");
     await testDb.reset();
-    await seed(testDb.db, [{ email: "daro@example.com", password: "daro-secret" }]);
+    await seed(testDb.db, [
+      { username: "daro", email: "daro@example.com", password: "daro-secret" },
+    ]);
     authenticate = new AuthenticateAdmin(
       new DrizzleUserRepository(testDb.db),
       new Argon2PasswordHasher(),
@@ -23,20 +25,18 @@ describe.skipIf(!databaseUrl)("admin login against Postgres", () => {
     await testDb?.close();
   });
 
-  it("accepts a seeded admin with the right password", async () => {
-    const identity = await authenticate.execute({
-      email: "Daro@Example.com",
-      password: "daro-secret",
-    });
-    expect(identity).toMatchObject({ email: "daro@example.com" });
+  it("accepts a seeded admin by username or by email", async () => {
+    for (const login of ["Daro", "Daro@Example.com"]) {
+      expect(
+        await authenticate.execute({ username: login, password: "daro-secret" }),
+      ).toMatchObject({ username: "daro", role: "owner", mustChangePassword: false });
+    }
   });
 
   it("rejects a wrong password and an unknown email", async () => {
+    await expect(authenticate.execute({ username: "daro", password: "wrong" })).resolves.toBeNull();
     await expect(
-      authenticate.execute({ email: "daro@example.com", password: "wrong" }),
-    ).resolves.toBeNull();
-    await expect(
-      authenticate.execute({ email: "nobody@example.com", password: "daro-secret" }),
+      authenticate.execute({ username: "nobody", password: "daro-secret" }),
     ).resolves.toBeNull();
   });
 });

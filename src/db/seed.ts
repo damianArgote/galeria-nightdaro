@@ -2,8 +2,10 @@ import { Argon2PasswordHasher } from "../infra/auth/argon2-password-hasher";
 import type { Db } from "./client";
 import { siteSettings, tiers, trackingLinks, users } from "./schema";
 
+/** The seeded admins are owners: they create the other admins from the panel. */
 export interface SeedAdmin {
-  email: string;
+  username: string;
+  email?: string;
   password: string;
 }
 
@@ -67,8 +69,10 @@ export async function seed(db: Db, admins: SeedAdmin[]): Promise<void> {
     await db
       .insert(users)
       .values({
-        email: admin.email.toLowerCase(),
+        username: admin.username.trim().toLowerCase(),
+        email: admin.email?.trim().toLowerCase() ?? null,
         passwordHash: await hasher.hash(admin.password),
+        role: "owner",
       })
       .onConflictDoNothing();
   }

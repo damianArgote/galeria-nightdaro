@@ -47,6 +47,8 @@ export default defineConfig({
       STORAGE_DRIVER: "local",
       LOCAL_STORAGE_DIR: E2E_STORAGE_DIR,
       SITE_URL: `http://localhost:${PORT}`,
+      // Like CF-Connecting-IP in production: lets a spec use its own rate-limit bucket.
+      CLIENT_IP_HEADER: "x-e2e-client-ip",
       // A Patreon client that is configured but never reached: the specs stop at the redirect.
       PATREON_CLIENT_ID: "e2e-client-id",
       PATREON_CLIENT_SECRET: "e2e-client-secret",

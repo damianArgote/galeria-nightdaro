@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { auth } from "@/auth";
+import { requireAdminPage } from "@/auth";
 import { body, brush, display, mono } from "@/app/g/fonts";
 import { AdminNav, AdminTopbar } from "@/components/admin/admin-nav";
 import { logout } from "./actions";
@@ -8,9 +7,9 @@ import { logout } from "./actions";
 export const metadata: Metadata = { title: "Panel · NightDaro", robots: { index: false } };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  // The middleware already blocks /admin without a session; this is defense in depth.
-  const session = await auth();
-  if (!session?.user) redirect("/login");
+  // The middleware only checks the token; this also checks the admin is active and their
+  // password is not temporary.
+  const admin = await requireAdminPage();
 
   return (
     <div
@@ -51,8 +50,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               className="size-[34px] flex-none rounded-full border-2 border-black bg-[radial-gradient(circle_at_35%_35%,#ff4fd8,var(--brand-violet)_55%,#150b42)]"
             />
             <div className="min-w-0">
-              <b className="block truncate text-[13px]">{session.user.email}</b>
-              <small className="font-label text-[10px] text-brand-green">● sesión activa</small>
+              <b className="block truncate text-[13px]">{admin.username}</b>
+              <small className="font-label text-[10px] text-brand-green">
+                ● {admin.role === "owner" ? "dueño" : "admin"}
+              </small>
             </div>
           </div>
           <form action={logout}>

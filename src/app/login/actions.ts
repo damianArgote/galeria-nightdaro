@@ -10,7 +10,7 @@ export interface LoginState {
 export async function login(_state: LoginState, formData: FormData): Promise<LoginState> {
   try {
     await signIn("credentials", {
-      email: formData.get("email"),
+      username: formData.get("username"),
       password: formData.get("password"),
       redirectTo: "/admin",
     });
@@ -20,7 +20,7 @@ export async function login(_state: LoginState, formData: FormData): Promise<Log
       return { error: "Demasiados intentos. Esperá un minuto y probá de nuevo." };
     }
     if (error instanceof AuthError) {
-      return { error: "Email o contraseña incorrectos." };
+      return { error: "Usuario o contraseña incorrectos." };
     }
     // signIn redirects by throwing; let Next.js handle it.
     throw error;
