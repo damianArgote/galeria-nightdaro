@@ -20,11 +20,11 @@ Assumptions (marked, not asked):
 
 ## Tasks
 
-| ID  | Specs      | Route  | Status  | Evidence                                                  |
-| --- | ---------- | ------ | ------- | --------------------------------------------------------- |
-| T1  | S1, S2, S4 | inline | pending | username, role, forced change, session version, migration |
-| T2  | S1, S4     | inline | pending | /admin/usuarios for the owner                             |
-| T3  | S3         | inline | pending | driver.js tours                                           |
+| ID  | Specs      | Route  | Status  | Evidence                                           |
+| --- | ---------- | ------ | ------- | -------------------------------------------------- |
+| T1  | S1, S2, S4 | inline | done    | cf89277: 284 unit + 46 e2e green; verifier pending |
+| T2  | S1, S4     | inline | pending | /admin/usuarios for the owner                      |
+| T3  | S3         | inline | pending | driver.js tours                                    |
 
 Route evidence: no Writer trigger — T2 depends on T1's model; T3 is independent but small. T1 and T2 touch authentication and permissions: high-risk item 2, independent verifier after their checks.
 
@@ -33,5 +33,6 @@ Route evidence: no Writer trigger — T2 depends on T1's model; T3 is independen
 - **L1** (2026-11-01, user): "prs listos, faltaria agregar lo siguiente, agregar mas admins generar sus usuarios y password temporal, luego que lo cambien al loguearse la primera vez no tiene que ser un email el usuario pueder ser un username, y para el panel agregar tutoriales de cada seccion con driver.js para que cada admin sepa como usar el panel y sea un onboarding facil"
 - **L2** (2026-11-01, user): permissions → "Solo un dueño (Recommended)".
 - **L3** (2026-11-01): today sessions are 30-day JWTs and requireAdmin() only checks the token, so a disabled admin would keep access for a month; T1 adds a session version checked against the database.
+- **L4** (2026-11-01): T1 done in cf89277. Migration 0006 backfills usernames from the email's local part (numbered on collision, padded to 3) and makes existing admins owners; tested on a scratch DB. requireAdmin() reads the admin on every call (active + session version); requireAdminPage() redirects to /login or /cambiar-clave. The guard test now scans every Server Action in src/app with an explicit public allowlist. The change-password form uses onSubmit because React 19 empties a form after its action (it wiped the temporary password after a rejected attempt). e2e uses CLIENT_IP_HEADER so a spec can have its own login rate-limit bucket.
 - Pending elsewhere: Patreon T5–T7 (`odd/tasks/patreon.md`).
 - Next: T1.
