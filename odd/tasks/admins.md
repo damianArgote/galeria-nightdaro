@@ -20,11 +20,11 @@ Assumptions (marked, not asked):
 
 ## Tasks
 
-| ID  | Specs      | Route  | Status  | Evidence                                                                     |
-| --- | ---------- | ------ | ------- | ---------------------------------------------------------------------------- |
-| T1  | S1, S2, S4 | inline | done    | cf89277: 284 unit + 46 e2e green; verifier PASS, advisories fixed in 1df802f |
-| T2  | S1, S4     | inline | done    | 237d573: 302 unit + 51 e2e green (admin-users.spec); verifier pending        |
-| T3  | S3         | inline | pending | driver.js tours                                                              |
+| ID  | Specs      | Route  | Status | Evidence                                                                     |
+| --- | ---------- | ------ | ------ | ---------------------------------------------------------------------------- |
+| T1  | S1, S2, S4 | inline | done   | cf89277: 284 unit + 46 e2e green; verifier PASS, advisories fixed in 1df802f |
+| T2  | S1, S4     | inline | done   | 237d573: 302 unit + 51 e2e green (admin-users.spec); verifier pending        |
+| T3  | S3         | inline | done   | 2aba83d: 304 unit + 54 e2e green (admin-tour.spec); screenshots reviewed     |
 
 Route evidence: no Writer trigger — T2 depends on T1's model; T3 is independent but small. T1 and T2 touch authentication and permissions: high-risk item 2, independent verifier after their checks.
 
@@ -37,5 +37,6 @@ Route evidence: no Writer trigger — T2 depends on T1's model; T3 is independen
 - **L5** (2026-11-01): T1 verifier PASS. Fixed in 1df802f: adminRoute answers 403 (not 500) with a temporary password; password change limited to 5 attempts/min per admin; the password is written only if the session version is unchanged and the admin is active (cannot undo a concurrent disable/reset); only changePasswordAction may pass allowTemporaryPassword (guard test); the seed creates no admin once an owner exists. Not changed: migration edge case with crafted names like "foo-2" (single row in production).
 - **L6** (2026-11-02): T2 done in 237d573. Owner actions update only their fields and bump the session version in the same SQL statement (setDisabled, resetPassword), so they cannot overwrite a concurrent password change. Temporary passwords: 16 chars from a 31-letter alphabet without look-alikes, grouped xxxx-xxxx-xxxx-xxxx (~79 bits), shown once. Non-owners get 404 on /admin/usuarios and no nav item.
 - **L7** (2026-11-02): T2 verifier PASS. Fixed in baec046: disabling an owner is one conditional UPDATE that requires another active owner at write time (two owners disabling each other cannot leave zero); a unique-violation on username becomes ConflictError. Not changed: resetting a disabled admin through a direct call (harmless: they stay disabled).
+- **L8** (2026-11-02): T3 done in 2aba83d. driver.js ^1.10.2 (MIT, no dependencies, no install scripts). Tours live in src/components/admin/tours.ts, one per section, anchored on data-tour attributes; missing targets are skipped. Auto-start on the first visit per admin and section (localStorage, best effort), never under navigator.webdriver so the e2e suite is not covered by overlays; the auto-start test fakes webdriver=false. Welcome copy is gender-neutral ("Te damos la bienvenida").
 - Pending elsewhere: Patreon T5–T7 (`odd/tasks/patreon.md`).
 - Next: T1.
