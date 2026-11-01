@@ -132,7 +132,7 @@ Prueba en vivo contra la librería configurada (sube un video de 3 s, espera el 
 
 ## Galería pública
 
-El diseño sigue los mockups de la galería y del panel. Lo que todavía falta, porque necesita datos nuevos o pantallas nuevas, está en [docs/deuda-tecnica.md](docs/deuda-tecnica.md) como los Pasos 13 a 22. El banner del hero se toma de `public/banner.jpg` si existe; si no, se muestra el nombre del sitio.
+El diseño sigue los mockups de la galería y del panel. Lo que todavía falta, porque necesita datos nuevos o pantallas nuevas, está en [docs/deuda-tecnica.md](docs/deuda-tecnica.md) como los Pasos 13 a 22. El banner del hero es `public/banner.jpg` (el del mockup, 1600 × 685); si se borra, el hero muestra el nombre del sitio.
 
 `/`, `/en-proceso`, `/timelapses`, `/obra/[slug]` y `/apoyar` son Server Components con ISR (`revalidate = 300`), y cada cambio del panel las revalida. Cada página tiene dos variantes estáticas: `/g/sfw/…` y `/g/adult/…`. `src/middleware.ts` elige cuál servir según la cookie `age_ok` (los crawlers reciben siempre `sfw`) y reescribe la URL; `/g/*` no se puede pedir directo.
 

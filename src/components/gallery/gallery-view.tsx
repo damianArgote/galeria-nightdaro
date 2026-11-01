@@ -53,7 +53,7 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
             {/* eslint-disable-next-line @next/next/no-img-element -- static banner, already sized */}
             <img
               src={BANNER}
-              alt={`${settings.name}: ilustración anime, tinta y fantasía +18`}
+              alt="NightDaro · Tinta, pin-up, fantasía +18 · Ilustración anime sin censura"
               width={1600}
               height={685}
               draggable={false}
