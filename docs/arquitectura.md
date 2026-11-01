@@ -94,7 +94,7 @@ Siete tablas, sin `tenant_id`: la configuración del sitio es una sola fila.
 | `users` | id, email, password\_hash, created\_at | Daro y Dami |
 | `artworks` | id, slug, title, description, kind, rating, status, position, tags text\[\], published\_at | kind: finished, wip, timelapse; rating: sfw, suggestive, explicit; status: draft, published, hidden |
 | `media_assets` | id, artwork\_id, type, original\_key, preview\_key, thumb\_key, censored\_key, blur\_data, width, height, stream\_video\_id, status | El original vive en la zona privada |
-| `tiers` | id, platform, name, price\_cents, currency, url, position | platform: patreon, onlyfans, fansly |
+| `tiers` | id, platform, name, price\_cents, currency, url, position, benefits, highlighted | platform: patreon, onlyfans, fansly; benefits: hasta 6, de hasta 80 caracteres; como máximo un tier destacado (índice único parcial) |
 | `tracking_links` | id, code, target\_url, label, tier\_id | `/r/{code}` cuenta el clic |
 | `events` | id, type, artwork\_id, link\_id, session\_hash, referrer, country, created\_at | type: view, click, age\_ok; sin IP |
 

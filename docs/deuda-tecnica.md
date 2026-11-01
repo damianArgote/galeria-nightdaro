@@ -15,7 +15,7 @@ Todos estos pasos necesitan datos que hoy el modelo no tiene o pantallas que tod
 | 14 | Contenido editable de la portada | Sí: `site_settings` |
 | 15 | Duración de los timelapses | Sí: `media_assets` |
 | 16 | Avance de las obras en proceso | Sí: `artworks` |
-| 17 | Beneficios y tier destacado | Sí: `tiers` |
+| 17 | Beneficios y tier destacado (**hecho**) | Sí: `tiers` |
 | 18 | Resumen ampliado | Sí: tabla nueva `activity` |
 | 19 | Subida ampliada | Sí: `artworks` |
 | 20 | Galería del panel ampliada | No |
@@ -86,6 +86,8 @@ Hecho cuando: una obra en proceso muestra su etapa y su avance en la galería.
 ```
 
 ### Paso 17. Beneficios de los tiers y tier destacado
+
+> **Hecho** antes del lanzamiento, a pedido, para mostrar los beneficios de los tiers de Patreon. Al destacar un tier se desmarca el anterior, y la base lo garantiza con un índice único parcial.
 
 ```text
 Leé docs/arquitectura.md, secciones "Modelo de datos" (tiers) e "Integraciones", y mirá los tiers del mockup.

@@ -24,7 +24,8 @@ export default async function LinksPage() {
           <PanelHeader title="Tiers" description="Los niveles que se muestran en /apoyar." />
           <div className="grid gap-3">
             {tiers.map((tier) => (
-              <TierEditor key={tier.id} tier={tier} />
+              // Remount when the highlight moves to another tier, so no form keeps a stale checkbox.
+              <TierEditor key={`${tier.id}-${tier.highlighted}`} tier={tier} />
             ))}
             <TierEditor />
           </div>
