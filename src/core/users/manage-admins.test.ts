@@ -143,6 +143,28 @@ describe("SetAdminActive", () => {
   });
 });
 
+describe("concurrency guards", () => {
+  it("refuses to disable the last active owner even when the check raced (the store decides)", async () => {
+    // Simulates two owners disabling each other: the use case saw another owner, but by the
+    // time it writes, that owner is disabled too.
+    const second = { ...owner, id: "77777777-7777-4777-8777-777777777777", username: "dami" };
+    await users.save(second);
+    await users.save({ ...owner, disabledAt: NOW });
+    const racing = new SetAdminActive(
+      Object.assign(Object.create(users), {
+        list: async () => [owner, second],
+        findById: users.findById.bind(users),
+        setDisabled: users.setDisabled.bind(users),
+      }),
+      () => NOW,
+    );
+    await expect(
+      racing.execute("someone-else", { id: second.id, active: false }),
+    ).rejects.toBeInstanceOf(ConflictError);
+    expect((await users.findById(second.id))?.disabledAt).toBeNull();
+  });
+});
+
 describe("ListAdmins", () => {
   it("lists admins without password hashes", async () => {
     await create().execute({ username: "luna" });

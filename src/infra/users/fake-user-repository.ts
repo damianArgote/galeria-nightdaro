@@ -22,6 +22,10 @@ export class FakeUserRepository implements UserRepository {
   async setDisabled(id: string, disabledAt: Date | null) {
     const user = this.items.get(id);
     if (!user) return false;
+    const otherActiveOwner = [...this.items.values()].some(
+      (u) => u.role === "owner" && !u.disabledAt && u.id !== id,
+    );
+    if (disabledAt && user.role === "owner" && !otherActiveOwner) return false;
     this.items.set(id, { ...user, disabledAt, sessionVersion: user.sessionVersion + 1 });
     return true;
   }

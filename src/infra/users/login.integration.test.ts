@@ -70,7 +70,15 @@ describe.skipIf(!databaseUrl)("admin login against Postgres", () => {
 
   it("disables, re-enables and resets an admin, bumping the session version each time", async () => {
     const repository = new DrizzleUserRepository(testDb.db);
-    const daro = (await repository.findByUsername("daro"))!;
+    const owner = (await repository.findByUsername("daro"))!;
+    const daro = {
+      ...owner,
+      id: "44444444-4444-4444-8444-444444444444",
+      username: "luna",
+      email: null,
+      role: "admin" as const,
+    };
+    await repository.save(daro);
     const at = new Date("2026-11-02T12:00:00Z");
 
     expect(await repository.setDisabled(daro.id, at)).toBe(true);
@@ -87,5 +95,16 @@ describe.skipIf(!databaseUrl)("admin login against Postgres", () => {
       sessionVersion: daro.sessionVersion + 3,
     });
     expect(await repository.setDisabled("00000000-0000-4000-8000-000000000000", at)).toBe(false);
+  });
+
+  it("never disables the last active owner, and reports a taken username as a conflict", async () => {
+    const repository = new DrizzleUserRepository(testDb.db);
+    const daro = (await repository.findByUsername("daro"))!;
+    expect(await repository.setDisabled(daro.id, new Date())).toBe(false);
+    expect((await repository.findById(daro.id))?.disabledAt).toBeNull();
+
+    await expect(
+      repository.save({ ...daro, id: "33333333-3333-4333-8333-333333333333", email: null }),
+    ).rejects.toMatchObject({ name: "ConflictError", field: "username" });
   });
 });

@@ -109,7 +109,10 @@ export class SetAdminActive {
         throw new ConflictError("Tiene que quedar al menos un dueño activo.");
       }
     }
-    await this.users.setDisabled(id, active ? null : this.clock());
+    // The store re-checks "another active owner" in the same write (two owners racing).
+    if (!(await this.users.setDisabled(id, active ? null : this.clock()))) {
+      throw new ConflictError("Tiene que quedar al menos un dueño activo.");
+    }
   }
 }
 
