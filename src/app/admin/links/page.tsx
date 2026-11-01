@@ -12,7 +12,7 @@ export default async function LinksPage({
 }) {
   await requireAdmin();
   const patreon = container.patreon;
-  const [tiers, links, patreonStatus, params] = await Promise.all([
+  const [tiers, links, patreonStatus, params, patreonTiers] = await Promise.all([
     container.listTiers.execute(),
     container.listTrackingLinks.execute(),
     patreon
@@ -23,6 +23,7 @@ export default async function LinksPage({
         })
       : null,
     searchParams,
+    patreon ? patreon.listPatreonTiers() : [],
   ]);
 
   return (
@@ -40,9 +41,13 @@ export default async function LinksPage({
           <div className="grid gap-3">
             {tiers.map((tier) => (
               // Remount when the highlight moves to another tier, so no form keeps a stale checkbox.
-              <TierEditor key={`${tier.id}-${tier.highlighted}`} tier={tier} />
+              <TierEditor
+                key={`${tier.id}-${tier.highlighted}-${tier.patreonTierId}`}
+                tier={tier}
+                patreonTiers={patreonTiers}
+              />
             ))}
-            <TierEditor />
+            <TierEditor patreonTiers={patreonTiers} />
           </div>
         </Panel>
         <Panel>

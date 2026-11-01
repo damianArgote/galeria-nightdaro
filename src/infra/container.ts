@@ -36,8 +36,10 @@ import {
   CompletePatreonConnect,
   DisconnectPatreon,
   GetPatreonStatus,
+  PatreonAccess,
   StartPatreonConnect,
 } from "@/core/patreon/connect";
+import { RecordPatreonPledge, SetUpPatreonCampaign } from "@/core/patreon/sync";
 import { InvalidInputError } from "@/core/shared/errors";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
@@ -53,6 +55,11 @@ import {
   DrizzleTrackingLinkRepository,
 } from "./links/drizzle-link-repositories";
 import { DrizzlePatreonConnectionRepository } from "./patreon/drizzle-patreon-connection-repository";
+import {
+  DrizzlePatreonEventRepository,
+  DrizzlePatreonMemberRepository,
+  DrizzlePatreonTierCatalog,
+} from "./patreon/drizzle-patreon-repositories";
 import { patreonSetup } from "./patreon/patreon-config";
 import { DrizzleMediaAssetRepository } from "./media/drizzle-media-asset-repository";
 import { createStorage, createUrlSigner, createVideoPort } from "./media/media-config";
@@ -101,9 +108,30 @@ function patreon() {
   }
   if (!setup) return null;
   const connections = new DrizzlePatreonConnectionRepository(getDb(), setup.cipher);
+  const members = new DrizzlePatreonMemberRepository(getDb());
+  const catalog = new DrizzlePatreonTierCatalog(getDb());
   return {
+    /** Patreon's tiers as last read, to link ours by hand in the panel. */
+    listPatreonTiers: () => catalog.list(),
     start: new StartPatreonConnect(setup.port, setup.redirectUri),
     complete: new CompletePatreonConnect(setup.port, connections, setup.redirectUri),
+    setUp: new SetUpPatreonCampaign({
+      patreon: setup.port,
+      access: new PatreonAccess(setup.port, connections),
+      connections,
+      catalog,
+      members,
+      tiers: tiers(),
+      webhookUri: setup.webhookUri,
+    }),
+    recordPledge: new RecordPatreonPledge({
+      patreon: setup.port,
+      access: new PatreonAccess(setup.port, connections),
+      members,
+      events: new DrizzlePatreonEventRepository(getDb()),
+    }),
+    /** The secret Patreon signs webhooks with; null until the webhook exists. */
+    webhookSecret: () => connections.webhookSecret(),
     disconnect: new DisconnectPatreon(setup.port, connections),
     status: new GetPatreonStatus(connections),
   };

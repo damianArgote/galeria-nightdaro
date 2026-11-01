@@ -224,6 +224,46 @@ describe("HttpPatreonAdapter", () => {
     expect((error as PatreonApiError).status).toBe(401);
   });
 
+  it("reads one member's current state, null when Patreon no longer has it", async () => {
+    const { fetch, calls } = fakeFetch([
+      {
+        body: {
+          data: {
+            id: "m1",
+            type: "member",
+            attributes: {
+              patron_status: "former_patron",
+              currently_entitled_amount_cents: 0,
+              pledge_relationship_start: "not a date",
+            },
+          },
+        },
+      },
+      { status: 404, body: { errors: [] } },
+    ]);
+    const adapter = new HttpPatreonAdapter(config, fetch);
+
+    expect(await adapter.getMember("at", "m1")).toEqual({
+      id: "m1",
+      status: "former_patron",
+      amountCents: 0,
+      tierIds: [],
+      pledgeStart: null,
+    });
+    expect(calls[0]!.url.pathname).toBe("/api/oauth2/v2/members/m1");
+    expect(await adapter.getMember("at", "gone")).toBeNull();
+  });
+
+  it("lists the campaign's webhooks with their URIs", async () => {
+    const { fetch, calls } = fakeFetch([
+      { body: { data: [{ id: "wh-1", type: "webhook", attributes: { uri: "https://x/hook" } }] } },
+    ]);
+    expect(await new HttpPatreonAdapter(config, fetch).listWebhooks("at")).toEqual([
+      { id: "wh-1", uri: "https://x/hook" },
+    ]);
+    expect(calls[0]!.url.pathname).toBe("/api/oauth2/v2/webhooks");
+  });
+
   it("rejects a response with an unexpected shape", async () => {
     const { fetch } = fakeFetch([{ body: { data: [] } }]);
     await expect(new HttpPatreonAdapter(config, fetch).getCampaign("at")).rejects.toThrow(

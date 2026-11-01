@@ -62,20 +62,41 @@ const campaignSchema = z.object({
     .default([]),
 });
 
+/** A JSON:API member resource, as the members endpoint and the webhooks send it. */
+export const memberResourceSchema = z.object({
+  id: z.string().min(1).max(100),
+  type: z.literal("member"),
+  attributes: z.object({
+    patron_status: z.enum(PATRON_STATUSES).nullish(),
+    currently_entitled_amount_cents: z.number().int().nullish(),
+    pledge_relationship_start: z.string().nullish(),
+  }),
+  relationships: z
+    .object({ currently_entitled_tiers: z.object({ data: z.array(ref) }).optional() })
+    .optional(),
+});
+
+/** Keeps only what the Resumen needs: Patreon also sends names and emails, never kept. */
+export function toMember(resource: z.infer<typeof memberResourceSchema>): PatreonMember {
+  const start = resource.attributes.pledge_relationship_start;
+  const pledgeStart = start ? new Date(start) : null;
+  return {
+    id: resource.id,
+    status: resource.attributes.patron_status ?? null,
+    amountCents: resource.attributes.currently_entitled_amount_cents ?? 0,
+    tierIds: resource.relationships?.currently_entitled_tiers?.data.map((t) => t.id) ?? [],
+    pledgeStart: pledgeStart && !Number.isNaN(pledgeStart.getTime()) ? pledgeStart : null,
+  };
+}
+
+const memberSchema = z.object({ data: memberResourceSchema });
+const webhooksSchema = z.object({
+  data: z.array(z.object({ id: z.string(), attributes: z.object({ uri: z.string() }) })),
+});
+const MEMBER_FIELDS = "patron_status,currently_entitled_amount_cents,pledge_relationship_start";
+
 const membersSchema = z.object({
-  data: z.array(
-    z.object({
-      id: z.string(),
-      attributes: z.object({
-        patron_status: z.enum(PATRON_STATUSES).nullish(),
-        currently_entitled_amount_cents: z.number().int().nullish(),
-        pledge_relationship_start: z.string().nullish(),
-      }),
-      relationships: z
-        .object({ currently_entitled_tiers: z.object({ data: z.array(ref) }).optional() })
-        .optional(),
-    }),
-  ),
+  data: z.array(memberResourceSchema),
   meta: z
     .object({
       pagination: z
@@ -151,26 +172,33 @@ export class HttpPatreonAdapter implements PatreonPort {
       const url = new URL(`${API}/campaigns/${encodeURIComponent(campaignId)}/members`);
       url.searchParams.set("include", "currently_entitled_tiers");
       // Only these fields: no name, no email.
-      url.searchParams.set(
-        "fields[member]",
-        "patron_status,currently_entitled_amount_cents,pledge_relationship_start",
-      );
+      url.searchParams.set("fields[member]", MEMBER_FIELDS);
       url.searchParams.set("page[count]", "1000");
       if (cursor) url.searchParams.set("page[cursor]", cursor);
       const body = membersSchema.parse(await this.request(url, { accessToken }));
-      for (const member of body.data) {
-        const start = member.attributes.pledge_relationship_start;
-        members.push({
-          id: member.id,
-          status: member.attributes.patron_status ?? null,
-          amountCents: member.attributes.currently_entitled_amount_cents ?? 0,
-          tierIds: member.relationships?.currently_entitled_tiers?.data.map((t) => t.id) ?? [],
-          pledgeStart: start ? new Date(start) : null,
-        });
-      }
+      members.push(...body.data.map(toMember));
       cursor = body.meta?.pagination?.cursors?.next;
     } while (cursor);
     return members;
+  }
+
+  async getMember(accessToken: string, memberId: string): Promise<PatreonMember | null> {
+    const url = new URL(`${API}/members/${encodeURIComponent(memberId)}`);
+    url.searchParams.set("include", "currently_entitled_tiers");
+    url.searchParams.set("fields[member]", MEMBER_FIELDS);
+    try {
+      return toMember(memberSchema.parse(await this.request(url, { accessToken })).data);
+    } catch (error) {
+      if (error instanceof PatreonApiError && error.status === 404) return null;
+      throw error;
+    }
+  }
+
+  async listWebhooks(accessToken: string): Promise<{ id: string; uri: string }[]> {
+    const url = new URL(`${API}/webhooks`);
+    url.searchParams.set("fields[webhook]", "uri");
+    const body = webhooksSchema.parse(await this.request(url, { accessToken }));
+    return body.data.map((w) => ({ id: w.id, uri: w.attributes.uri }));
   }
 
   async createWebhook(

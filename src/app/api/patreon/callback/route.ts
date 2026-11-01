@@ -37,5 +37,13 @@ export const GET = adminRoute(async (request) => {
     console.error("Patreon connection failed", error);
     return back(request, "error");
   }
+  try {
+    // Tiers, links, webhook and members. The connection stays even if this fails;
+    // connecting again retries it.
+    await patreon.setUp.execute();
+  } catch (error) {
+    console.error("Patreon set-up failed", error);
+    return back(request, "incompleto");
+  }
   return back(request, "conectado");
 });
