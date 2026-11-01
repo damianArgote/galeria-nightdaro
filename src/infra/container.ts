@@ -47,6 +47,12 @@ import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
 import { AuthenticateAdmin } from "@/core/users/authenticate-admin";
 import { ChangeOwnPassword } from "@/core/users/change-password";
+import {
+  CreateAdmin,
+  ListAdmins,
+  ResetAdminPassword,
+  SetAdminActive,
+} from "@/core/users/manage-admins";
 import { createDb, type Db } from "@/db/client";
 import { requireEnv } from "@/db/env";
 import { DrizzleEventRepository } from "./analytics/drizzle-event-repository";
@@ -168,6 +174,18 @@ export const container = {
   /** The admin behind a session, read on every request by requireAdmin. */
   findAdmin(id: string) {
     return new DrizzleUserRepository(getDb()).findById(id);
+  },
+  get createAdmin() {
+    return new CreateAdmin(new DrizzleUserRepository(getDb()), passwordHasher);
+  },
+  get resetAdminPassword() {
+    return new ResetAdminPassword(new DrizzleUserRepository(getDb()), passwordHasher);
+  },
+  get setAdminActive() {
+    return new SetAdminActive(new DrizzleUserRepository(getDb()));
+  },
+  get listAdmins() {
+    return new ListAdmins(new DrizzleUserRepository(getDb()));
   },
   get changeOwnPassword() {
     return new ChangeOwnPassword(new DrizzleUserRepository(getDb()), passwordHasher);

@@ -67,4 +67,25 @@ describe.skipIf(!databaseUrl)("admin login against Postgres", () => {
     ).toBe(true);
     expect((await repository.findById(daro.id))?.sessionVersion).toBe(daro.sessionVersion + 1);
   });
+
+  it("disables, re-enables and resets an admin, bumping the session version each time", async () => {
+    const repository = new DrizzleUserRepository(testDb.db);
+    const daro = (await repository.findByUsername("daro"))!;
+    const at = new Date("2026-11-02T12:00:00Z");
+
+    expect(await repository.setDisabled(daro.id, at)).toBe(true);
+    expect(await repository.findById(daro.id)).toMatchObject({
+      disabledAt: at,
+      sessionVersion: daro.sessionVersion + 1,
+    });
+    expect(await repository.setDisabled(daro.id, null)).toBe(true);
+    expect(await repository.resetPassword(daro.id, "new-hash")).toBe(true);
+    expect(await repository.findById(daro.id)).toMatchObject({
+      disabledAt: null,
+      passwordHash: "new-hash",
+      mustChangePassword: true,
+      sessionVersion: daro.sessionVersion + 3,
+    });
+    expect(await repository.setDisabled("00000000-0000-4000-8000-000000000000", at)).toBe(false);
+  });
 });
