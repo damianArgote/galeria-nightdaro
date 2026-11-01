@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { ConflictError } from "@/core/shared/errors";
 import { container } from "@/infra/container";
+import { publicUrl } from "@/infra/http/public-url";
 import { adminRoute } from "../../admin/admin-route";
 import { PATREON_STATE_COOKIE, patreonStateCookieOptions } from "../state-cookie";
 
@@ -8,7 +9,7 @@ const back = (request: Request, result: string) =>
   new Response(null, {
     status: 303,
     headers: {
-      Location: new URL(`/admin/links?patreon=${result}`, request.url).href,
+      Location: publicUrl(`/admin/links?patreon=${result}`, request).href,
       "Cache-Control": "no-store",
     },
   });

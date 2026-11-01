@@ -2,6 +2,7 @@ import { ZodError } from "zod";
 import { container } from "@/infra/container";
 import { clientIp } from "@/infra/auth/client-ip";
 import { visitorFrom } from "@/infra/analytics/visitor";
+import { isSameSiteOrigin } from "@/infra/http/public-url";
 import { isCrawler } from "@/app/g/routing";
 
 const MAX_BODY_BYTES = 4096;
@@ -14,7 +15,7 @@ const noContent = () => new Response(null, { status: 204 });
  */
 export async function POST(request: Request) {
   const origin = request.headers.get("origin");
-  if (origin && new URL(origin).host !== new URL(request.url).host) {
+  if (origin && !isSameSiteOrigin(origin, request)) {
     return new Response("Forbidden", { status: 403 });
   }
   if (isCrawler(request.headers.get("user-agent"))) return noContent();
