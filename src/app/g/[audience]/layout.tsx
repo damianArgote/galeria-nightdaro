@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { AgeGate } from "@/components/gallery/age-gate";
 import { SiteFooter } from "@/components/gallery/site-footer";
+import { ProtectionShield } from "@/components/gallery/protection-shield";
 import { SiteHeader } from "@/components/gallery/site-header";
 import { ViewTracker } from "@/components/gallery/view-tracker";
 import { container } from "@/infra/container";
@@ -41,6 +42,7 @@ export default async function GalleryLayout({
       className={`${display.variable} ${body.variable} ${brush.variable} ${mono.variable} min-h-dvh bg-[#07041a] font-jp text-paper`}
     >
       <ViewTracker />
+      <ProtectionShield />
       <SiteHeader name={settings.name} />
       <main>{children}</main>
       <SiteFooter name={settings.name} socials={settings.socials} />

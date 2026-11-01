@@ -9,16 +9,19 @@ export function SiteHeader({ name }: { name: string }) {
           {first}
           <b className="font-normal text-brand-violet">{rest.join("")}</b>
         </Link>
-        <nav aria-label="Secciones" className="hidden gap-6 text-sm text-[#aaa4d8] sm:flex">
-          <Link href="/" className="hover:text-paper">
+        <nav aria-label="Secciones" className="hidden gap-[22px] text-sm text-[#aaa4d8] sm:flex">
+          <Link href="/#galeria" className="hover:text-paper">
             Galería
           </Link>
-          <Link href="/timelapses" className="hover:text-paper">
-            Timelapses
-          </Link>
           <Link href="/apoyar" className="hover:text-paper">
-            Apoyar
+            Suscripción
           </Link>
+          <Link href="/#proteccion" className="hover:text-paper">
+            Protección
+          </Link>
+          <a href="#redes" className="hover:text-paper">
+            Redes
+          </a>
         </nav>
         <Link href="/apoyar" className="gallery-cta px-4 py-2 text-sm">
           Patreon

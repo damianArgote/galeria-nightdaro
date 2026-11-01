@@ -18,8 +18,10 @@ import { ListTrackingLinks } from "@/core/links/list-tracking-links";
 import { UpdateTier } from "@/core/links/update-tier";
 import { UpdateTrackingLink } from "@/core/links/update-tracking-link";
 import {
+  CountPublicGallery,
   GetPublicArtwork,
   ListPublicGallery,
+  ListPublicTags,
   ResolvePublicMedia,
 } from "@/core/gallery/public-gallery";
 import { ListPublicTiers } from "@/core/gallery/public-tiers";
@@ -178,6 +180,12 @@ export const container = {
 
   get listPublicGallery() {
     return new ListPublicGallery(publicDeps());
+  },
+  get countPublicGallery() {
+    return new CountPublicGallery(artworks());
+  },
+  get listPublicTags() {
+    return new ListPublicTags(artworks());
   },
   get getPublicArtwork() {
     return new GetPublicArtwork(publicDeps());

@@ -109,6 +109,39 @@ test.describe("public gallery without the age gate", () => {
   });
 });
 
+test.describe("public gallery like the mockup", () => {
+  test("hero, tab counters, watermark, protection section and blur", async ({ page }) => {
+    await acceptGate(page);
+
+    // The bio comes from /admin/pagina (another spec edits it; the seed default is the mockup text).
+    await expect(page.getByTestId("hero-bio")).not.toBeEmpty();
+    await expect(page.getByTestId("hero-tags").getByRole("listitem").first()).toBeVisible();
+    const finished = DEMO_ARTWORKS.filter((a) => a.kind === "finished").length;
+    await expect(page.getByTestId("count-finished")).toHaveText(String(finished));
+    await expect(page.getByTestId("card-watermark").first()).toContainText("@nightdaro");
+    await expect(page.locator("#proteccion")).toContainText("Cómo se protege el contenido");
+    for (const item of ["Galería", "Suscripción", "Protección", "Redes"]) {
+      await expect(
+        page.getByRole("navigation", { name: "Secciones" }).getByRole("link", { name: item }),
+      ).toBeVisible();
+    }
+
+    await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+    await expect(page.locator("html")).toHaveClass(/shielded/);
+    await expect(page.getByText("Contenido protegido · volvé a la ventana")).toBeVisible();
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await expect(page.locator("html")).not.toHaveClass(/shielded/);
+  });
+
+  test("the sfw counters never include adult artworks", async ({ page }) => {
+    await page.goto("/");
+    const sfwFinished = DEMO_ARTWORKS.filter(
+      (a) => a.kind === "finished" && a.rating === "sfw",
+    ).length;
+    await expect(page.getByTestId("count-finished")).toHaveText(String(sfwFinished));
+  });
+});
+
 test.describe("public gallery after the age gate", () => {
   test("shows every rating, remembers it for a year and protects the images", async ({
     page,

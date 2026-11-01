@@ -22,6 +22,7 @@ import { useEffect, useState, useTransition } from "react";
 import type { Artwork, ArtworkKind } from "@/core/artworks/artwork";
 import { ArtworkForm } from "@/components/admin/artwork-form";
 import { RATING_LABELS, STATUS_LABELS } from "@/components/admin/artwork-labels";
+import { Eye, EyeOff, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -239,30 +240,45 @@ function ArtworkRow({
         </div>
       </div>
       <div className="col-span-3 flex flex-wrap gap-1.5 sm:col-span-1">
-        <Button size="sm" variant="outline" onClick={() => setEditing((v) => !v)}>
-          {editing ? "Cerrar" : "Editar"}
+        <Button
+          size="icon"
+          variant="tile"
+          aria-label={editing ? "Cerrar" : "Editar"}
+          title={editing ? "Cerrar" : "Editar"}
+          onClick={() => setEditing((v) => !v)}
+        >
+          {editing ? <X /> : <Pencil />}
         </Button>
         {artwork.status === "published" ? (
           <Button
-            size="sm"
-            variant="outline"
+            size="icon"
+            variant="tile"
+            aria-label="Ocultar"
+            title="Ocultar de la galería"
             disabled={pending}
             onClick={() => run(() => hideArtworkAction({ id: artwork.id }))}
           >
-            Ocultar
+            <EyeOff />
           </Button>
         ) : (
           <Button
-            size="sm"
+            size="icon"
+            variant="tile"
+            aria-label="Publicar"
+            title="Publicar en la galería"
             disabled={pending}
+            className="text-brand-green"
             onClick={() => run(() => publishArtworkAction({ id: artwork.id }))}
           >
-            Publicar
+            <Eye />
           </Button>
         )}
         <Button
-          size="sm"
-          variant="destructive"
+          size="icon"
+          variant="tile"
+          aria-label="Borrar"
+          title="Borrar"
+          className="text-destructive hover:border-destructive"
           disabled={pending}
           onClick={() => {
             if (confirm(`¿Borrar "${artwork.title}"? No se puede deshacer.`)) {
@@ -270,7 +286,7 @@ function ArtworkRow({
             }
           }}
         >
-          Borrar
+          <Trash2 />
         </Button>
       </div>
       {error && <p className="col-span-full text-sm text-destructive">{error}</p>}

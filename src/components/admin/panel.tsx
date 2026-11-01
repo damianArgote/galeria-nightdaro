@@ -25,7 +25,7 @@ export function PanelHeader({
   return (
     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h2 className="font-heading text-xl font-black">{title}</h2>
+        <h2 className="font-display text-xl">{title}</h2>
         {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
       </div>
       {children}
@@ -51,12 +51,12 @@ export function ViewHeader({
           <span className="mr-2 text-sm tracking-[0.2em] text-foreground normal-case">{kanji}</span>
           {eyebrow}
         </p>
-        <h1 className="mt-1.5 text-3xl font-black tracking-tight sm:text-4xl">{title}</h1>
+        <h2 className="mt-1.5 font-display text-[clamp(28px,4vw,40px)] leading-tight">{title}</h2>
         <p className="mt-1.5 max-w-[60ch] text-muted-foreground">{description}</p>
       </div>
       <span
         aria-hidden
-        className="hidden self-start text-5xl leading-none tracking-[0.15em] text-foreground/15 sm:block"
+        className="hidden self-start font-brush text-[clamp(40px,5vw,56px)] leading-none tracking-[0.2em] text-foreground/20 [writing-mode:vertical-rl] sm:block"
       >
         {kanji}
       </span>

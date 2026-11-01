@@ -2,7 +2,7 @@
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
-// Validated with the dataviz palette checker on the panel card (#1c1440): both pass.
+// Validated with the dataviz palette checker on the panel card (#120c33): both pass.
 const SERIES = {
   visits: { label: "Visitas", color: "#b14dff" },
   clicks: { label: "Clics a tiers y links", color: "#1494c2" },
