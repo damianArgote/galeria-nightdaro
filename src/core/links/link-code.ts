@@ -34,3 +34,13 @@ export async function assertTierNameFree(
   );
   if (taken) throw new ConflictError(`Ya hay un tier "${name}" en esa plataforma`, "name");
 }
+
+/**
+ * Only one tier is highlighted: before saving a highlighted one, the others are cleared
+ * (first, so the database's single-highlight index never sees two).
+ */
+export async function clearOtherHighlights(tiers: TierRepository, ownId: string) {
+  for (const tier of await tiers.list()) {
+    if (tier.highlighted && tier.id !== ownId) await tiers.save({ ...tier, highlighted: false });
+  }
+}
