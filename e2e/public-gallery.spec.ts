@@ -165,6 +165,22 @@ test.describe("public gallery like the mockup", () => {
     await expect(page.locator("html")).not.toHaveClass(/shielded/);
   });
 
+  test("playing a video (focus moves into its iframe) does not blur the page", async ({ page }) => {
+    await page.goto("/");
+    // Same as the timelapse player: an iframe inside the page that takes the focus on click.
+    await page.evaluate(() => {
+      const frame = document.createElement("iframe");
+      frame.srcdoc = "<button>play</button>";
+      frame.style.cssText = "position:fixed;top:0;left:0;width:200px;height:100px;z-index:999";
+      document.body.append(frame);
+    });
+    await page.frameLocator("iframe[srcdoc]").getByRole("button", { name: "play" }).click();
+    await page.waitForTimeout(300);
+
+    await expect(page.locator("html")).not.toHaveClass(/shielded/);
+    await expect(page.getByText("Contenido protegido · volvé a la ventana")).toHaveCount(0);
+  });
+
   test("the sfw counters never include adult artworks", async ({ page }) => {
     await page.goto("/");
     const sfwFinished = DEMO_ARTWORKS.filter(
