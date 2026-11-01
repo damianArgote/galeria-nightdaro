@@ -71,12 +71,12 @@ Con un token inválido, el embed de Bunny responde igual HTTP 200, pero con una 
 
    ```bash
    corepack enable
-   SEED_DARO_EMAIL=... SEED_DARO_PASSWORD=... SEED_DAMI_EMAIL=... SEED_DAMI_PASSWORD=... SEED_ADMIN3_EMAIL=... SEED_ADMIN3_PASSWORD=... pnpm db:seed
+   SEED_ADMIN_EMAIL='...' SEED_ADMIN_PASSWORD='...' pnpm db:seed
    ```
 
-   Usar comillas simples en las contraseñas (`'...'`) para que la shell no interprete `$` ni `!`. El tercer admin (`SEED_ADMIN3_*`) es opcional: van las dos variables o ninguna.
+   Usar comillas simples en las contraseñas (`'...'`) para que la shell no interprete `$` ni `!`. El seed crea un solo admin.
 
-   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y los admins. Se puede volver a correr para sumar un admin: lo que ya existe no se toca. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
+   Crea la configuración del sitio, los tres tiers con sus links `/r/patreon-1..3` y el admin. Para sumar otro admin, se vuelve a correr con sus credenciales: lo que ya existe no se toca. El seed de demo (`db:seed:demo`) **no** se usa en producción: solo funciona con storage local.
 
 Si el build falla porque Render instala las dependencias por su cuenta con otra versión de pnpm, la variable `SKIP_INSTALL_DEPS=true` (ya está en `render.yaml`) lo evita. Es un workaround que propone la comunidad de Render, no documentación oficial.
 
@@ -103,7 +103,7 @@ Si el build falla porque Render instala las dependencias por su cuenta con otra 
 1. `curl https://www.nightdaro.com/api/health` responde `{"status":"ok"}`.
 2. `https://nightdaro.com` redirige a `https://www.nightdaro.com`, con candado válido.
 3. La portada muestra la puerta +18. En `/apoyar` aparecen los tres tiers del seed, y cada botón pasa por `/r/patreon-…` hasta Patreon.
-4. Entrar en `/login` con un admin del seed.
+4. Entrar en `/login` con el admin del seed.
 5. **IP del visitante:** con la sesión iniciada, abrir `https://www.nightdaro.com/api/admin/ip-check`.
    - `resolved` tiene que ser **tu IP pública** (comparala con cualquier sitio tipo "cuál es mi IP"). Si muestra una IP de Render o de Cloudflare, el rate limit del login y los visitantes únicos quedarían mal: probá `CLIENT_IP_HEADER=true-client-ip` y volvé a mirar.
    - Además, comprobá que **no se puede falsear**: copiá la cookie de sesión del navegador (`__Secure-authjs.session-token`) y corré `curl -s -H "CF-Connecting-IP: 1.2.3.4" -H "Cookie: __Secure-authjs.session-token=…" https://www.nightdaro.com/api/admin/ip-check`. `resolved` **no** puede ser `1.2.3.4`. Si lo es, el header no lo pisa Cloudflare y cualquiera podría saltear el rate limit: borrá `CLIENT_IP_HEADER` y avisá.
