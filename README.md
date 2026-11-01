@@ -151,3 +151,7 @@ Variables opcionales: `SITE_URL` (base de las URLs absolutas del Open Graph y de
 - **Clics:** `/r/{código}` registra el clic (salvo de crawlers) y redirige con 302.
 - **Sin IP:** no se guarda ninguna. Cada evento lleva un `session_hash` diario, HMAC-SHA256 de día + IP + user agent con `ANALYTICS_SALT`, que es obligatoria en producción. Además se guardan el país del CDN y solo el host del referrer, que se descarta si es una IP.
 - **Resumen (`/admin`):** visitas, visitantes únicos, aceptación de la puerta y conversión a clic. Suma visitas y clics por día (hora de Buenos Aires), clics por tier y por red, y las obras más vistas, con filtro de fechas.
+
+## Deploy
+
+Render con `render.yaml` (Blueprint), Neon, Bunny y Cloudflare: el paso a paso está en [docs/deploy.md](docs/deploy.md). `GET /api/health` es el health check, que también consulta la base. `GET /api/admin/ip-check` (solo admin) muestra qué IP ve la app detrás del proxy, para elegir `CLIENT_IP_HEADER`. Sentry se activa con `SENTRY_DSN`, sin IPs, cookies ni Session Replay.

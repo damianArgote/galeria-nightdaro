@@ -1,0 +1,69 @@
+# Render Blueprint: one web service (docs/arquitectura.md, "Deploy y costos").
+# Secrets have `sync: false`: Render asks for them when the Blueprint is created and they
+# never live in the repo. See docs/deploy.md.
+services:
+  - type: web
+    name: galeria-nightdaro
+    runtime: node
+    # "Starter" in docs/arquitectura.md: 0.5 CPU, 512 MB. The free plan sleeps.
+    plan: 0.5c-512mb
+    # Next to the Neon database (AWS us-east-1).
+    region: virginia
+    branch: main
+    # Corepack provides the pnpm version of package.json#packageManager. Node comes from .node-version.
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    # Same as `pnpm db:migrate` and `pnpm start`, through the installed binaries: no pnpm (or
+    # network download of it) needed after the build.
+    preDeployCommand: node_modules/.bin/drizzle-kit migrate
+    startCommand: node_modules/.bin/next start
+    healthCheckPath: /api/health
+    # Deploy main only after the CI checks pass.
+    autoDeployTrigger: checksPass
+    # Render also redirects nightdaro.com to www.
+    domains:
+      - www.nightdaro.com
+    envVars:
+      - key: SITE_URL
+        value: https://www.nightdaro.com
+      - key: AUTH_TRUST_HOST
+        value: "true"
+      - key: STORAGE_DRIVER
+        value: bunny
+      # Render's Cloudflare sets the real client IP here; X-Forwarded-For can be spoofed.
+      - key: CLIENT_IP_HEADER
+        value: cf-connecting-ip
+      # Render installs with the build command only (see docs/deploy.md).
+      - key: SKIP_INSTALL_DEPS
+        value: "true"
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: ANALYTICS_SALT
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: BUNNY_STORAGE_HOST
+        sync: false
+      - key: BUNNY_ZONE_ORIGINALS
+        sync: false
+      - key: BUNNY_ZONE_PUBLIC
+        sync: false
+      - key: BUNNY_STORAGE_KEY_ORIGINALS
+        sync: false
+      - key: BUNNY_STORAGE_KEY_PUBLIC
+        sync: false
+      - key: BUNNY_CDN_HOST
+        sync: false
+      - key: BUNNY_TOKEN_KEY
+        sync: false
+      - key: BUNNY_STREAM_LIBRARY_ID
+        sync: false
+      - key: BUNNY_STREAM_API_KEY
+        sync: false
+      - key: BUNNY_STREAM_TOKEN_KEY
+        sync: false
+      - key: BUNNY_STREAM_READONLY_KEY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: CONTACT_EMAIL
+        value: contacto@nightdaro.com
