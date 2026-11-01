@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArtworkGrid } from "@/components/gallery/artwork-grid";
+import { ViewTracker } from "@/components/gallery/view-tracker";
 import { container } from "@/infra/container";
 import { audienceFrom } from "../../../audience-params";
 
@@ -47,6 +48,7 @@ export default async function ArtworkPage({ params }: { params: Params }) {
 
   return (
     <section className="mx-auto max-w-[1180px] px-4 py-14">
+      <ViewTracker artworkId={artwork.id} />
       <Link href="/" className="font-label text-xs tracking-[0.14em] text-brand-green uppercase">
         ← Galería
       </Link>

@@ -1,5 +1,7 @@
 // Composition root: wires core use cases to their infra adapters.
 import "server-only";
+import { GetAnalyticsSummary } from "@/core/analytics/get-analytics-summary";
+import { RecordClick, RecordClientEvent } from "@/core/analytics/record-event";
 import { CreateArtwork } from "@/core/artworks/create-artwork";
 import { DeleteArtwork } from "@/core/artworks/delete-artwork";
 import { HideArtwork } from "@/core/artworks/hide-artwork";
@@ -33,6 +35,7 @@ import { UpdateSiteSettings } from "@/core/site/update-site-settings";
 import { AuthenticateAdmin } from "@/core/users/authenticate-admin";
 import { createDb, type Db } from "@/db/client";
 import { requireEnv } from "@/db/env";
+import { DrizzleEventRepository } from "./analytics/drizzle-event-repository";
 import { DrizzleArtworkRepository } from "./artworks/drizzle-artwork-repository";
 import { Argon2PasswordHasher } from "./auth/argon2-password-hasher";
 import { RateLimiter } from "./auth/rate-limiter";
@@ -61,6 +64,7 @@ const siteSettings = () => new DrizzleSiteSettingsRepository(getDb());
 const tiers = () => new DrizzleTierRepository(getDb());
 const trackingLinks = () => new DrizzleTrackingLinkRepository(getDb());
 const mediaAssets = () => new DrizzleMediaAssetRepository(getDb());
+const events = () => new DrizzleEventRepository(getDb());
 
 const imageProcessor = new SharpImageProcessor();
 /** Every storage key starts with the tenant folder (see "Preparado para el SaaS"). */
@@ -91,6 +95,18 @@ export const container = {
   passwordHasher,
   /** 5 login attempts per minute per IP. */
   loginRateLimiter: new RateLimiter({ limit: 5, windowMs: 60_000 }),
+  /** 60 analytics events per minute per IP. */
+  eventRateLimiter: new RateLimiter({ limit: 60, windowMs: 60_000 }),
+
+  get recordClientEvent() {
+    return new RecordClientEvent(events(), artworks());
+  },
+  get recordClick() {
+    return new RecordClick(events(), trackingLinks());
+  },
+  get getAnalyticsSummary() {
+    return new GetAnalyticsSummary(events());
+  },
 
   get listArtworks() {
     return new ListArtworks(artworks());
@@ -171,9 +187,6 @@ export const container = {
   },
   get listPublicTiers() {
     return new ListPublicTiers(tiers(), trackingLinks());
-  },
-  async findTrackingLink(code: string) {
-    return trackingLinks().findByCode(code);
   },
 
   get getSiteSettings() {

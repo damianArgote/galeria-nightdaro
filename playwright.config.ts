@@ -9,7 +9,7 @@ export const E2E_STORAGE_DIR = ".storage/e2e";
 export const ADMIN_STATE = `${E2E_STORAGE_DIR}/admin-state.json`;
 
 // The app under test uses its own database (see e2e/global-setup.ts).
-function e2eDatabaseUrl() {
+export function e2eDatabaseUrl() {
   if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required for e2e tests");
   const url = new URL(process.env.DATABASE_URL);
   url.pathname = `${url.pathname}_test_e2e`;
@@ -42,6 +42,7 @@ export default defineConfig({
     env: {
       AUTH_SECRET: process.env.AUTH_SECRET || "e2e-only-secret-not-for-production",
       AUTH_TRUST_HOST: "true",
+      ANALYTICS_SALT: process.env.ANALYTICS_SALT || "e2e-only-analytics-salt",
       DATABASE_URL: e2eDatabaseUrl(),
       STORAGE_DRIVER: "local",
       LOCAL_STORAGE_DIR: E2E_STORAGE_DIR,

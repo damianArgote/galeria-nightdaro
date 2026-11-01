@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PublicArtwork } from "@/core/gallery/public-gallery";
 import { cn } from "@/lib/utils";
+import { track } from "./track";
 
 const NUMERALS = "一二三四五六七八九十";
 
@@ -116,7 +117,10 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
           <li key={artwork.id} data-testid="gallery-card" data-rating={artwork.rating}>
             <button
               type="button"
-              onClick={() => setOpen(artwork)}
+              onClick={() => {
+                setOpen(artwork);
+                track({ type: "view", artworkId: artwork.id });
+              }}
               className="group flex w-full flex-col overflow-hidden rounded-sm border-[3px] border-black bg-[#120c33] text-left shadow-[5px_5px_0_#000] transition hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[8px_8px_0_var(--brand-violet)]"
             >
               <div className="relative aspect-[4/5] overflow-hidden">
