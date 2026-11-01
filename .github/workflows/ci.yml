@@ -37,10 +37,8 @@ jobs:
       # Test-only values for the seed and the e2e login; not real credentials.
       AUTH_SECRET: ci-only-auth-secret-not-used-anywhere-else
       AUTH_TRUST_HOST: "true"
-      SEED_DARO_EMAIL: daro@example.com
-      SEED_DARO_PASSWORD: ci-daro-password
-      SEED_DAMI_EMAIL: dami@example.com
-      SEED_DAMI_PASSWORD: ci-dami-password
+      SEED_ADMIN_EMAIL: daro@example.com
+      SEED_ADMIN_PASSWORD: ci-daro-password
 
     steps:
       - uses: actions/checkout@v7
