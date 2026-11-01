@@ -17,7 +17,8 @@ Orden recomendado: Neon → Bunny → Sentry → Render → Cloudflare → verif
 ## 1. Neon (Postgres)
 
 1. Crear un proyecto en Neon (plan Free) con **Postgres 16**, en la región **AWS US East 1 (N. Virginia)**, la misma zona que el servicio de Render (`region: virginia`).
-2. En **Connect**, desactivar **Connection pooling** y copiar la cadena **directa**: el host **no** lleva `-pooler`. Tiene que terminar en `?sslmode=require`. Las migraciones necesitan la conexión directa, y con un único servidor de 5 conexiones no hace falta el pooler.
+2. En **Connect**, desactivar **Connection pooling** y copiar la cadena **directa**: el host **no** lleva `-pooler`. Las migraciones necesitan la conexión directa, y con un único servidor de 5 conexiones no hace falta el pooler.
+   Neon agrega `&channel_binding=require` al final: **hay que sacarlo**. El driver de la app (postgres.js) lo manda a Postgres como si fuera una opción y la conexión falla con `unrecognized configuration parameter "channel_binding"`. La cadena queda así: `postgresql://neondb_owner:<contraseña>@ep-…us-east-1.aws.neon.tech/neondb?sslmode=require`.
 3. Ese valor es `DATABASE_URL`.
 
 En el plan Free, la base se suspende tras unos minutos sin uso, así que la primera visita después de un rato tarda un poco más. Por eso el health check de Render no la consulta. Los backups (restauración a un punto en el tiempo) se configuran en **Branches**; probarlos es parte del Paso 11.
