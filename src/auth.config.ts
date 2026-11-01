@@ -11,7 +11,8 @@ export const authConfig = {
     authorized({ auth, request }) {
       if (!request.nextUrl.pathname.startsWith("/admin") || auth?.user) return true;
       const signIn = new URL("/login", request.nextUrl);
-      signIn.searchParams.set("callbackUrl", request.nextUrl.href);
+      // Relative: behind Render's proxy the absolute URL is the internal address.
+      signIn.searchParams.set("callbackUrl", request.nextUrl.pathname + request.nextUrl.search);
       return Response.redirect(signIn);
     },
     jwt({ token, user }) {
