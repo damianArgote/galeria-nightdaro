@@ -32,6 +32,12 @@ import { RerenderArtworkImage } from "@/core/media/rerender-artwork-image";
 import { StartTimelapseUpload } from "@/core/media/start-timelapse-upload";
 import { SyncVideoStatus } from "@/core/media/sync-video-status";
 import { UploadArtworkImage } from "@/core/media/upload-artwork-image";
+import {
+  CompletePatreonConnect,
+  DisconnectPatreon,
+  GetPatreonStatus,
+  StartPatreonConnect,
+} from "@/core/patreon/connect";
 import { InvalidInputError } from "@/core/shared/errors";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
@@ -46,6 +52,8 @@ import {
   DrizzleTierRepository,
   DrizzleTrackingLinkRepository,
 } from "./links/drizzle-link-repositories";
+import { DrizzlePatreonConnectionRepository } from "./patreon/drizzle-patreon-connection-repository";
+import { patreonSetup } from "./patreon/patreon-config";
 import { DrizzleMediaAssetRepository } from "./media/drizzle-media-asset-repository";
 import { createStorage, createUrlSigner, createVideoPort } from "./media/media-config";
 import { SharpImageProcessor } from "./media/sharp-image-processor";
@@ -78,6 +86,26 @@ function publicDeps() {
     artworks: artworks(),
     images: new ListArtworkImages(mediaAssets(), createUrlSigner()),
     videos: new ListArtworkVideos(mediaAssets(), createVideoPort()),
+  };
+}
+
+/** Null while the Patreon client is not configured: the panel says so instead of failing. */
+function patreon() {
+  let setup: ReturnType<typeof patreonSetup>;
+  try {
+    setup = patreonSetup();
+  } catch (error) {
+    // Client set but PATREON_TOKEN_KEY or SITE_URL missing: only the Patreon panel says so.
+    console.error("Patreon is misconfigured", error);
+    return null;
+  }
+  if (!setup) return null;
+  const connections = new DrizzlePatreonConnectionRepository(getDb(), setup.cipher);
+  return {
+    start: new StartPatreonConnect(setup.port, setup.redirectUri),
+    complete: new CompletePatreonConnect(setup.port, connections, setup.redirectUri),
+    disconnect: new DisconnectPatreon(setup.port, connections),
+    status: new GetPatreonStatus(connections),
   };
 }
 
@@ -233,5 +261,9 @@ export const container = {
   },
   get deleteTrackingLink() {
     return new DeleteTrackingLink(trackingLinks());
+  },
+
+  get patreon() {
+    return patreon();
   },
 };

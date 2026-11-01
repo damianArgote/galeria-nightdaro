@@ -134,3 +134,14 @@ Si el paso 4 muestra el texto viejo, la restauración funciona. Para restaurar d
 | Fecha de la prueba | Quién | Resultado |
 | --- | --- | --- |
 | _pendiente_ | | |
+
+## 9. Patreon (opcional)
+
+1. Con la cuenta de Daro, entrar a https://www.patreon.com/portal/registration/register-clients y crear un cliente:
+   - **API version:** 2.
+   - **Redirect URIs:** `https://www.nightdaro.com/api/patreon/callback`, exacta.
+   - Nombre, descripción e ícono: libres. El dragón de `public/brand/` sirve.
+2. Patreon muestra el **Client ID** y el **Client Secret**. Van en Render (**Environment**) como `PATREON_CLIENT_ID` y `PATREON_CLIENT_SECRET`. Nunca se pegan en un chat ni en el repo.
+3. `PATREON_TOKEN_KEY` cifra los tokens guardados. Render lo genera solo (`generateValue`). Si no aparece después de sincronizar el Blueprint, cargar a mano cualquier texto aleatorio largo. Si se cambia, la conexión guardada ya no se puede leer y hay que volver a conectar.
+4. Redesplegar. En `/admin/links` aparece **Conectar Patreon**: Daro lo toca, acepta en Patreon y vuelve al panel con "Patreon quedó conectado".
+

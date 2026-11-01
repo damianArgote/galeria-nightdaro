@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/auth";
 import { createTierSchema } from "@/core/links/create-tier";
 import { createTrackingLinkSchema } from "@/core/links/create-tracking-link";
@@ -52,4 +53,10 @@ export async function deleteTrackingLinkAction(input: unknown) {
   return runAction(deleteTrackingLinkSchema, input, (data) =>
     container.deleteTrackingLink.execute(data),
   );
+}
+
+export async function disconnectPatreonAction() {
+  await requireAdmin();
+  await container.patreon?.disconnect.execute();
+  revalidatePath("/admin/links");
 }
