@@ -6,8 +6,8 @@ import { seed } from "./seed";
 import { siteSettings, tiers, trackingLinks, users } from "./schema";
 
 const admins = [
-  { email: "Daro@Example.com", password: "daro-secret" },
-  { email: "dami@example.com", password: "dami-secret" },
+  { username: "Daro", email: "Daro@Example.com", password: "daro-secret" },
+  { username: "dami", password: "dami-secret" },
 ];
 
 describe.skipIf(!databaseUrl)("seed", () => {
@@ -64,16 +64,27 @@ describe.skipIf(!databaseUrl)("seed", () => {
     );
   });
 
-  it("creates both admins with argon2id password hashes", async () => {
+  it("creates both admins as owners with argon2id password hashes", async () => {
     await seed(testDb.db, admins);
 
-    const rows = await testDb.db.select().from(users).orderBy(asc(users.email));
-    expect(rows.map((u) => u.email)).toEqual(["dami@example.com", "daro@example.com"]);
+    const rows = await testDb.db.select().from(users).orderBy(asc(users.username));
+    expect(rows.map((u) => [u.username, u.email, u.role, u.mustChangePassword])).toEqual([
+      ["dami", null, "owner", false],
+      ["daro", "daro@example.com", "owner", false],
+    ]);
     for (const user of rows) expect(user.passwordHash).toMatch(/^\$argon2id\$/);
 
-    const daro = rows.find((u) => u.email === "daro@example.com")!;
+    const daro = rows.find((u) => u.username === "daro")!;
     expect(await new Argon2PasswordHasher().verify("daro-secret", daro.passwordHash)).toBe(true);
     expect(await new Argon2PasswordHasher().verify("wrong", daro.passwordHash)).toBe(false);
+  });
+
+  it("creates no second owner once one exists, whatever username is given", async () => {
+    await seed(testDb.db, [admins[0]!]);
+    await seed(testDb.db, [{ username: "otro", password: "otra-clave" }]);
+
+    const rows = await testDb.db.select().from(users);
+    expect(rows.map((u) => u.username)).toEqual(["daro"]);
   });
 
   it("is idempotent", async () => {

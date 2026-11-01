@@ -15,12 +15,19 @@ export const authConfig = {
       signIn.searchParams.set("callbackUrl", request.nextUrl.pathname + request.nextUrl.search);
       return Response.redirect(signIn);
     },
+    // The token carries the session version; requireAdmin compares it with the database.
     jwt({ token, user }) {
-      if (user?.id) token.sub = user.id;
+      if (user?.id) {
+        token.sub = user.id;
+        token.name = user.username;
+        token.sv = user.sessionVersion;
+      }
       return token;
     },
     session({ session, token }) {
       if (token.sub) session.user.id = token.sub;
+      session.user.name = token.name ?? null;
+      session.user.sessionVersion = typeof token.sv === "number" ? token.sv : undefined;
       return session;
     },
   },

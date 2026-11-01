@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireAdmin } from "@/auth";
+import { requireAdminPage } from "@/auth";
 import { dateRangeSchema } from "@/core/analytics/get-analytics-summary";
 import { BarList } from "@/components/admin/analytics/bar-list";
 import { DailyCharts } from "@/components/admin/analytics/daily-charts";
@@ -65,7 +65,7 @@ export default async function SummaryPage({
 }: {
   searchParams: Promise<{ desde?: string; hasta?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminPage();
   const params = await searchParams;
   const parsed = dateRangeSchema.safeParse({
     from: params.desde ?? dayInZone(-13),

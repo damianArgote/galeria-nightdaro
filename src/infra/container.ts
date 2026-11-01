@@ -45,6 +45,7 @@ import { InvalidInputError } from "@/core/shared/errors";
 import { GetSiteSettings } from "@/core/site/get-site-settings";
 import { UpdateSiteSettings } from "@/core/site/update-site-settings";
 import { AuthenticateAdmin } from "@/core/users/authenticate-admin";
+import { ChangeOwnPassword } from "@/core/users/change-password";
 import { createDb, type Db } from "@/db/client";
 import { requireEnv } from "@/db/env";
 import { DrizzleEventRepository } from "./analytics/drizzle-event-repository";
@@ -163,9 +164,18 @@ export const container = {
   get authenticateAdmin() {
     return new AuthenticateAdmin(new DrizzleUserRepository(getDb()), passwordHasher);
   },
+  /** The admin behind a session, read on every request by requireAdmin. */
+  findAdmin(id: string) {
+    return new DrizzleUserRepository(getDb()).findById(id);
+  },
+  get changeOwnPassword() {
+    return new ChangeOwnPassword(new DrizzleUserRepository(getDb()), passwordHasher);
+  },
   passwordHasher,
   /** 5 login attempts per minute per IP. */
   loginRateLimiter: new RateLimiter({ limit: 5, windowMs: 60_000 }),
+  /** 5 password-change attempts per minute per admin: the current password is not an oracle. */
+  passwordChangeRateLimiter: new RateLimiter({ limit: 5, windowMs: 60_000 }),
   /** 60 analytics events per minute per IP. */
   eventRateLimiter: new RateLimiter({ limit: 60, windowMs: 60_000 }),
 

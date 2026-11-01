@@ -16,6 +16,7 @@ import {
 import { ARTWORK_KINDS, ARTWORK_RATINGS, ARTWORK_STATUSES } from "../core/artworks/artwork";
 import { TIER_PLATFORMS } from "../core/links/tier";
 import { PATREON_EVENT_KINDS } from "../core/patreon/patreon";
+import { ADMIN_ROLES } from "../core/users/user";
 import { MEDIA_STATUSES, MEDIA_TYPES } from "../core/media/media-asset";
 import type { SiteSeo, SiteSocials, SiteTheme } from "../core/site/site-settings";
 
@@ -29,10 +30,19 @@ export const eventType = pgEnum("event_type", ["view", "click", "age_ok"]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
+export const adminRole = pgEnum("admin_role", ADMIN_ROLES);
+
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull().unique(),
+  /** Lowercase, unique; the login. */
+  username: text("username").notNull().unique(),
+  /** Only admins from before usernames; still accepted as a login. */
+  email: text("email").unique(),
   passwordHash: text("password_hash").notNull(),
+  role: adminRole("role").notNull().default("admin"),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  sessionVersion: integer("session_version").notNull().default(0),
   createdAt: createdAt(),
 });
 

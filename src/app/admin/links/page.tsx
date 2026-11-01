@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/auth";
+import { requireAdminPage } from "@/auth";
 import { Panel, PanelHeader, ViewHeader } from "@/components/admin/panel";
 import { container } from "@/infra/container";
 import { PatreonPanel } from "./patreon-panel";
@@ -10,7 +10,7 @@ export default async function LinksPage({
 }: {
   searchParams: Promise<{ patreon?: string }>;
 }) {
-  await requireAdmin();
+  await requireAdminPage();
   const patreon = container.patreon;
   const [tiers, links, patreonStatus, params, patreonTiers] = await Promise.all([
     container.listTiers.execute(),
