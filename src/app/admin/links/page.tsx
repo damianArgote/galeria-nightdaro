@@ -36,7 +36,7 @@ export default async function LinksPage({
       />
       <div className="grid max-w-4xl gap-6">
         <PatreonPanel status={patreonStatus} result={params.patreon} />
-        <Panel>
+        <Panel data-tour="links-tiers">
           <PanelHeader title="Tiers" description="Los niveles que se muestran en /apoyar." />
           <div className="grid gap-3">
             {tiers.map((tier) => (
@@ -50,7 +50,7 @@ export default async function LinksPage({
             <TierEditor patreonTiers={patreonTiers} />
           </div>
         </Panel>
-        <Panel>
+        <Panel data-tour="links-tracking">
           <PanelHeader
             title="Links de seguimiento"
             description="Cada link es /r/{código}: registra el clic y redirige al destino."

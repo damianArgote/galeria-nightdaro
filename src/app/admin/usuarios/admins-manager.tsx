@@ -116,7 +116,12 @@ export function AdminsManager({
         />
       )}
 
-      <form onSubmit={create} noValidate className="mb-5 flex flex-wrap items-end gap-3">
+      <form
+        onSubmit={create}
+        noValidate
+        data-tour="users-create"
+        className="mb-5 flex flex-wrap items-end gap-3"
+      >
         <div className="min-w-56 flex-1">
           <FormField
             id="new-admin-username"
@@ -146,7 +151,7 @@ export function AdminsManager({
         </p>
       )}
 
-      <ul className="grid gap-2">
+      <ul className="grid gap-2" data-tour="users-list">
         {admins.map((admin) => {
           const self = admin.id === currentId;
           return (

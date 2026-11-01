@@ -37,7 +37,7 @@ export function PatreonPanel({
 }) {
   const notice = result ? RESULTS[result] : undefined;
   return (
-    <Panel data-testid="patreon-panel">
+    <Panel data-testid="patreon-panel" data-tour="links-patreon">
       <PanelHeader
         title="Patreon"
         description="Acceso de solo lectura a la campaña de Daro: altas, bajas y tiers. Nunca se guardan nombres ni emails de los fans."

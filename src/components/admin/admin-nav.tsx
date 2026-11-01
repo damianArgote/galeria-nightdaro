@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { AdminTour } from "./admin-tour";
 
 export const ADMIN_SECTIONS = [
   { href: "/admin", label: "Resumen", title: "Resumen", kanji: "概要" },
@@ -51,8 +52,8 @@ export function AdminNav({ owner }: { owner: boolean }) {
   );
 }
 
-/** Sticky top bar: the section title and how changes are saved. */
-export function AdminTopbar() {
+/** Sticky top bar: the section title, how changes are saved and the section's tutorial. */
+export function AdminTopbar({ adminId }: { adminId: string }) {
   const pathname = usePathname();
   const section = ADMIN_SECTIONS.find((s) => s.href === pathname) ?? ADMIN_SECTIONS[0];
 
@@ -68,14 +69,18 @@ export function AdminTopbar() {
           Los cambios se guardan al instante
         </span>
       </div>
-      <a
-        href="/"
-        target="_blank"
-        rel="noreferrer"
-        className="rounded-full border-[1.5px] border-border px-3 py-1.5 text-xs font-bold hover:border-brand-sky"
-      >
-        Ver página pública ↗
-      </a>
+      <div className="flex items-center gap-2">
+        <AdminTour adminId={adminId} />
+        <a
+          href="/"
+          target="_blank"
+          rel="noreferrer"
+          data-tour="public-link"
+          className="rounded-full border-[1.5px] border-border px-3 py-1.5 text-xs font-bold hover:border-brand-sky"
+        >
+          Ver página pública ↗
+        </a>
+      </div>
     </div>
   );
 }
