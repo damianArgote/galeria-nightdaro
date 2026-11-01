@@ -164,6 +164,8 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
                 <Link
                   key={tab.kind}
                   href={tab.href}
+                  // Each tab is its own page; keep the visitor at the grid instead of the hero.
+                  scroll={false}
                   aria-current={tab.kind === kind ? "page" : undefined}
                   className={cn(
                     "rounded-xs px-4 py-2 text-center text-sm font-bold text-[#aaa4d8]",
