@@ -10,7 +10,7 @@ import type { ActionResult } from "@/app/admin/_lib/action-result";
 import { ARTWORK_RATINGS } from "@/core/artworks/artwork";
 import { artworkFieldsSchema } from "@/core/artworks/artwork-schemas";
 import { applyFieldErrors } from "@/components/admin/apply-field-errors";
-import { uploadCover } from "../_lib/upload-cover";
+import { uploadImage } from "../_lib/upload-image";
 import { KIND_LABELS, RATING_LABELS } from "@/components/admin/artwork-labels";
 import { FormField } from "@/components/admin/form-field";
 import { Button } from "@/components/ui/button";
@@ -114,7 +114,8 @@ export function UploadArtworkForm() {
     }
     if (cover) {
       // The video is safe already; a failed cover is retried from Galería.
-      const result = await uploadCover(artworkId, cover);
+      // The form already asked for the adults confirmation.
+      const result = await uploadImage(artworkId, { image: cover });
       if (!result.ok) {
         router.push(`/admin/galeria?tipo=timelapse&portada=error`);
         return;

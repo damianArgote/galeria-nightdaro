@@ -26,7 +26,7 @@ import { Eye, EyeOff, Pencil, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { uploadCover } from "../_lib/upload-cover";
+import { ImageUploadForm } from "./image-upload-form";
 import {
   deleteArtworkAction,
   hideArtworkAction,
@@ -154,6 +154,7 @@ function ArtworkRow({
   video?: VideoInfo;
 }) {
   const [editing, setEditing] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -161,7 +162,6 @@ function ArtworkRow({
   });
 
   const hidden = artwork.status === "hidden";
-  const router = useRouter();
 
   function run(action: () => Promise<{ ok: boolean; error?: string }>) {
     setError(undefined);
@@ -253,27 +253,19 @@ function ArtworkRow({
               Ver video
             </a>
           )}
-          {artwork.kind === "timelapse" && (
-            <label className="cursor-pointer text-brand-sky underline underline-offset-2 has-focus-visible:outline-2">
-              {pending ? "Subiendo portada…" : thumb ? "Cambiar portada" : "Subir portada"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                disabled={pending}
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (!file) return;
-                  run(async () => {
-                    const result = await uploadCover(artwork.id, file);
-                    if (result.ok) router.refresh();
-                    return result;
-                  });
-                }}
-              />
-            </label>
-          )}
+          <button
+            type="button"
+            className="cursor-pointer text-brand-sky underline underline-offset-2"
+            onClick={() => setUploading((v) => !v)}
+          >
+            {artwork.kind === "timelapse"
+              ? thumb
+                ? "Cambiar portada"
+                : "Subir portada"
+              : thumb
+                ? "Cambiar imagen"
+                : "Subir imagen"}
+          </button>
         </div>
       </div>
       <div
@@ -331,6 +323,11 @@ function ArtworkRow({
         </Button>
       </div>
       {error && <p className="col-span-full text-sm text-destructive">{error}</p>}
+      {uploading && (
+        <div className="col-span-full mt-2 rounded-sm border-2 border-brand-sky bg-card p-4">
+          <ImageUploadForm artwork={artwork} onDone={() => setUploading(false)} />
+        </div>
+      )}
       {editing && (
         <div className="col-span-full mt-2 rounded-sm border-2 border-primary bg-card p-4">
           <ArtworkForm

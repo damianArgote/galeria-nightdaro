@@ -94,8 +94,12 @@ test.describe("timelapse cover", () => {
   }) => {
     await page.goto("/admin/galeria?tipo=timelapse");
     const row = page.getByTestId("artwork-row").filter({ hasText: title });
-    await row.getByText("Subir portada").setInputFiles(await pngFile("portada.png"));
-    await expect(row.getByText("Cambiar portada")).toBeVisible();
+    await row.getByRole("button", { name: "Subir portada" }).click();
+    const form = page.getByTestId("image-upload-form");
+    await form.getByLabel("Portada").setInputFiles(await pngFile("portada.png"));
+    await form.getByText("Todos los personajes son adultos").click();
+    await form.getByRole("button", { name: "Subir portada" }).click();
+    await expect(row.getByRole("button", { name: "Cambiar portada" })).toBeVisible();
 
     const visitor = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const publicPage = await visitor.newPage();
@@ -105,15 +109,94 @@ test.describe("timelapse cover", () => {
     await visitor.close();
   });
 
-  test("only timelapses take a cover", async ({ page }) => {
-    const [finished] = await db.db
-      .select({ id: artworks.id })
-      .from(artworks)
-      .where(eq(artworks.kind, "finished"))
-      .limit(1);
-    const response = await page.request.post(`/api/admin/artworks/${finished!.id}/cover`, {
-      multipart: { cover: await pngFile("x.png") },
+  test("the image route asks for the adults confirmation and knows the artwork", async ({
+    page,
+  }) => {
+    const missingConfirmation = await page.request.post(`/api/admin/artworks/${id}/image`, {
+      multipart: { image: await pngFile("x.png") },
     });
-    expect(response.status()).toBe(400);
+    expect(missingConfirmation.status()).toBe(400);
+    const unknown = await page.request.post(
+      "/api/admin/artworks/00000000-0000-4000-8000-000000000000/image",
+      { multipart: { image: await pngFile("x.png"), charactersAreAdults: "true" } },
+    );
+    expect(unknown.status()).toBe(404);
+  });
+});
+
+test.describe("image of an existing artwork", () => {
+  test.use({ storageState: ADMIN_STATE });
+  const db = createDb(e2eDatabaseUrl());
+  const title = "Borrador sin imagen";
+  let id: string;
+
+  test.beforeAll(async () => {
+    await db.db.delete(artworks).where(eq(artworks.title, title));
+    // Like a draft from Patreon: explicit, published by mistake, without an image.
+    const [row] = await db.db
+      .insert(artworks)
+      .values({
+        slug: "borrador-sin-imagen",
+        title,
+        kind: "finished",
+        rating: "explicit",
+        status: "published",
+        publishedAt: new Date(),
+      })
+      .returning({ id: artworks.id });
+    id = row!.id;
+  });
+
+  test.afterAll(async () => {
+    await db.db.delete(artworks).where(eq(artworks.id, id));
+    await db.close();
+  });
+
+  test("an explicit artwork gets its image and censored version from its Galería row", async ({
+    page,
+    browser,
+  }) => {
+    await page.goto("/admin/galeria");
+    const row = page.getByTestId("artwork-row").filter({ hasText: title });
+    await row.getByRole("button", { name: "Subir imagen" }).click();
+    const form = page.getByTestId("image-upload-form");
+    await form.getByLabel("Imagen", { exact: true }).setInputFiles(await pngFile("obra.png"));
+    await form
+      .getByLabel("Versión censurada")
+      .setInputFiles(await pngFile("censurada.png", "#222222"));
+    await form.getByRole("button", { name: "Subir imagen" }).click();
+    await expect(form.getByRole("alert")).toContainText(
+      "Confirmá que todos los personajes son adultos",
+    );
+    await form.getByRole("checkbox", { name: "Todos los personajes son adultos" }).check();
+    await form.getByRole("button", { name: "Subir imagen" }).click();
+    await expect(row.getByRole("button", { name: "Cambiar imagen" })).toBeVisible();
+
+    const visitor = await browser.newContext({
+      storageState: {
+        cookies: [
+          {
+            name: "age_ok",
+            value: "1",
+            domain: "localhost",
+            path: "/",
+            expires: -1,
+            httpOnly: true,
+            secure: false,
+            sameSite: "Lax",
+          },
+        ],
+        origins: [],
+      },
+    });
+    const publicPage = await visitor.newPage();
+    await publicPage.goto("/");
+    await expect(
+      publicPage
+        .getByTestId("gallery-card")
+        .filter({ hasText: title })
+        .getByTestId("artwork-image"),
+    ).toBeVisible();
+    await visitor.close();
   });
 });
