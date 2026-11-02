@@ -17,7 +17,11 @@ export class DrizzleEventRepository implements EventRepository {
     await this.db.insert(events).values({ ...event, ...(occurredAt && { createdAt: occurredAt }) });
   }
 
-  async hasClickSince(sessionHash: string, linkId: string, since: Date): Promise<boolean> {
+  async hasClickSince(
+    sessionHash: string,
+    target: { linkId: string } | { artworkId: string },
+    since: Date,
+  ): Promise<boolean> {
     const [row] = await this.db
       .select({ id: events.id })
       .from(events)
@@ -25,7 +29,9 @@ export class DrizzleEventRepository implements EventRepository {
         and(
           eq(events.type, "click"),
           eq(events.sessionHash, sessionHash),
-          eq(events.linkId, linkId),
+          "linkId" in target
+            ? eq(events.linkId, target.linkId)
+            : eq(events.artworkId, target.artworkId),
           gte(events.createdAt, since),
         ),
       )
@@ -72,6 +78,16 @@ export class DrizzleEventRepository implements EventRepository {
       where e.type = 'view' and ${inRange}
       group by a.id, a.title, a.slug order by views desc, a.title limit ${topArtworks}`);
 
+    const byArtwork = await this.db.execute<Record<string, unknown>>(sql`
+      select a.id, a.title, a.slug,
+        count(*) filter (where e.type = 'click') as clicks,
+        count(*) filter (where e.type = 'view') as views
+      from events e join artworks a on a.id = e.artwork_id
+      where e.type in ('click', 'view') and ${inRange}
+      group by a.id, a.title, a.slug
+      having count(*) filter (where e.type = 'click') > 0
+      order by clicks desc, views desc, a.title limit ${topArtworks}`);
+
     return {
       visits: n(totals?.visits),
       uniqueVisitors: n(totals?.unique_visitors),
@@ -90,6 +106,13 @@ export class DrizzleEventRepository implements EventRepository {
         clicks: n(r.clicks),
       })),
       daily: daily.map((r) => ({ day: String(r.day), visits: n(r.visits), clicks: n(r.clicks) })),
+      artworkClicks: byArtwork.map((r) => ({
+        artworkId: String(r.id),
+        title: String(r.title),
+        slug: String(r.slug),
+        views: n(r.views),
+        clicks: n(r.clicks),
+      })),
       topArtworks: top.map((r) => ({
         artworkId: String(r.id),
         title: String(r.title),

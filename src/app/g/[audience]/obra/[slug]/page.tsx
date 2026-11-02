@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { PatreonButton } from "@/components/gallery/patreon-button";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArtworkGrid } from "@/components/gallery/artwork-grid";
@@ -74,9 +75,7 @@ export default async function ArtworkPage({ params }: { params: Params }) {
               ))}
             </ul>
           )}
-          <Link href="/apoyar" className="gallery-cta mt-8 px-5 py-3">
-            Ver completo en Patreon
-          </Link>
+          <PatreonButton artwork={artwork} className="mt-8 px-5 py-3" />
         </div>
       </div>
     </section>

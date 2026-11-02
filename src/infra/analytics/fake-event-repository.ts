@@ -15,6 +15,7 @@ export class FakeEventRepository implements EventRepository {
     clicksByLink: [],
     daily: [],
     topArtworks: [],
+    artworkClicks: [],
   };
   lastRange: DateRange | undefined;
 
@@ -22,12 +23,16 @@ export class FakeEventRepository implements EventRepository {
     this.recorded.push({ ...event });
   }
 
-  async hasClickSince(sessionHash: string, linkId: string, since: Date): Promise<boolean> {
+  async hasClickSince(
+    sessionHash: string,
+    target: { linkId: string } | { artworkId: string },
+    since: Date,
+  ): Promise<boolean> {
     return this.recorded.some(
       (e) =>
         e.type === "click" &&
         e.sessionHash === sessionHash &&
-        e.linkId === linkId &&
+        ("linkId" in target ? e.linkId === target.linkId : e.artworkId === target.artworkId) &&
         (e.occurredAt ?? new Date()) >= since,
     );
   }

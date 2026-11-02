@@ -10,7 +10,7 @@ import { CreateArtwork } from "../artworks/create-artwork";
 import { PublishArtwork } from "../artworks/publish-artwork";
 import { CreateTrackingLink } from "../links/create-tracking-link";
 import { GetAnalyticsSummary } from "./get-analytics-summary";
-import { RecordClick, RecordClientEvent, referrerHost } from "./record-event";
+import { RecordArtworkClick, RecordClick, RecordClientEvent, referrerHost } from "./record-event";
 
 const visitor = { sessionHash: "a".repeat(32), country: "AR" };
 
@@ -194,5 +194,56 @@ describe("GetAnalyticsSummary", () => {
       ZodError,
     );
     await expect(summary.execute({ from: "ayer", to: "hoy" })).rejects.toThrow(ZodError);
+  });
+});
+
+describe("RecordArtworkClick", () => {
+  const POST = "https://www.patreon.com/posts/calabaza-123";
+
+  async function artwork(patreonPostUrl: string | null, publish = true) {
+    const created = await new CreateArtwork(artworks).execute({
+      title: `Obra ${Math.random()}`,
+      kind: "finished",
+      rating: "sfw",
+      patreonPostUrl,
+    });
+    if (publish) await new PublishArtwork(artworks).execute({ id: created.id });
+    return created;
+  }
+
+  it("records a click from this artwork and sends the visitor to its Patreon post", async () => {
+    const { id } = await artwork(POST);
+    let now = new Date("2026-11-02T12:00:00Z");
+    const click = new RecordArtworkClick(events, artworks, () => now);
+
+    await expect(
+      click.execute({ artworkId: id, referrer: "https://www.nightdaro.com/obra/x" }, visitor),
+    ).resolves.toBe(POST);
+    // A double click counts once; crawlers are redirected without counting.
+    now = new Date("2026-11-02T12:00:10Z");
+    await click.execute({ artworkId: id }, visitor);
+    await expect(click.execute({ artworkId: id }, null)).resolves.toBe(POST);
+
+    expect(events.recorded.map(({ occurredAt: _at, ...e }) => e)).toEqual([
+      {
+        type: "click",
+        artworkId: id,
+        linkId: null,
+        sessionHash: visitor.sessionHash,
+        referrer: "www.nightdaro.com",
+        country: "AR",
+      },
+    ]);
+  });
+
+  it("has nowhere to go for an unpublished artwork or one without a post", async () => {
+    const click = new RecordArtworkClick(events, artworks);
+    const draft = await artwork(POST, false);
+    const noPost = await artwork(null);
+
+    await expect(click.execute({ artworkId: draft.id }, visitor)).resolves.toBeNull();
+    await expect(click.execute({ artworkId: noPost.id }, visitor)).resolves.toBeNull();
+    await expect(click.execute({ artworkId: "not-a-uuid" }, visitor)).resolves.toBeNull();
+    expect(events.recorded).toEqual([]);
   });
 });

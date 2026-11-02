@@ -22,6 +22,7 @@ export class CreateArtwork {
 
     const artwork: Artwork = {
       ...fields,
+      patreonPostUrl: fields.patreonPostUrl ?? null,
       id: this.newId(),
       slug: await uniqueSlug(this.artworks, fields.title),
       status: "draft",

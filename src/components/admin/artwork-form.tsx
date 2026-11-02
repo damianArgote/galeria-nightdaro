@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import type { ActionResult } from "@/app/admin/_lib/action-result";
 import { ARTWORK_KINDS, ARTWORK_RATINGS, type Artwork } from "@/core/artworks/artwork";
-import { artworkFieldsSchema } from "@/core/artworks/artwork-schemas";
+import { artworkFieldsSchema, isPatreonUrl } from "@/core/artworks/artwork-schemas";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,9 @@ const formSchema = z.object({
   rating: z.enum(ARTWORK_RATINGS, { error: "Elegí un rating" }),
   /** Comma-separated in the form, an array for the use case. */
   tags: z.string().max(800),
+  patreonPostUrl: z.string().refine((value) => value.trim() === "" || isPatreonUrl(value.trim()), {
+    error: "Pegá el link del post en patreon.com",
+  }),
 });
 type FormValues = z.input<typeof formSchema>;
 
@@ -31,6 +34,8 @@ export interface ArtworkFormValues {
   kind: Artwork["kind"];
   rating: Artwork["rating"];
   tags: string[];
+  /** null removes the link. */
+  patreonPostUrl: string | null;
 }
 
 export function ArtworkForm({
@@ -40,7 +45,7 @@ export function ArtworkForm({
   onCancel,
   idPrefix = "artwork",
 }: {
-  artwork?: Pick<Artwork, "title" | "description" | "kind" | "rating" | "tags">;
+  artwork?: Pick<Artwork, "title" | "description" | "kind" | "rating" | "tags" | "patreonPostUrl">;
   submitLabel: string;
   onSubmit: (values: ArtworkFormValues) => Promise<ActionResult<unknown>>;
   onCancel?: () => void;
@@ -61,6 +66,7 @@ export function ArtworkForm({
       kind: artwork?.kind ?? "finished",
       rating: artwork?.rating,
       tags: artwork?.tags.join(", ") ?? "",
+      patreonPostUrl: artwork?.patreonPostUrl ?? "",
     },
   });
 
@@ -77,6 +83,7 @@ export function ArtworkForm({
         .split(",")
         .map((tag) => tag.trim())
         .filter(Boolean),
+      patreonPostUrl: values.patreonPostUrl?.trim() || null,
     });
     if (!result.ok) {
       setFormError(result.error);
@@ -152,6 +159,21 @@ export function ArtworkForm({
         error={errors.tags?.message}
       >
         <Input id={id("tags")} {...register("tags")} />
+      </FormField>
+
+      <FormField
+        id={id("patreon-post")}
+        label="Post de Patreon"
+        hint=" · Opcional. «Ver completa en Patreon» lleva a este post y el Resumen cuenta qué obras llevan más gente."
+        error={errors.patreonPostUrl?.message}
+      >
+        <Input
+          id={id("patreon-post")}
+          type="url"
+          placeholder="https://www.patreon.com/posts/…"
+          aria-invalid={!!errors.patreonPostUrl}
+          {...register("patreonPostUrl")}
+        />
       </FormField>
 
       {formError && (

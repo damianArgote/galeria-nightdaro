@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PublicArtwork } from "@/core/gallery/public-gallery";
 import { cn } from "@/lib/utils";
+import { PatreonButton } from "./patreon-button";
 import { track } from "./track";
 
 const NUMERALS = "一二三四五六七八九十";
@@ -239,9 +240,7 @@ function Lightbox({ artwork, onClose }: { artwork: PublicArtwork; onClose: () =>
             : "Vista en baja resolución con marca de agua. La versión en alta y sin marca está en Patreon."}
         </p>
         <div className="flex flex-wrap gap-2.5">
-          <Link href="/apoyar" className="gallery-cta px-5 py-3">
-            Ver completo en Patreon
-          </Link>
+          <PatreonButton artwork={artwork} className="px-5 py-3" />
           <Link
             href={`/obra/${artwork.slug}`}
             className="rounded-full border-[1.5px] border-[#2e2470] px-5 py-3 font-bold text-paper"

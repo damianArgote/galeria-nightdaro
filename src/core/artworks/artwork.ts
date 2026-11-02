@@ -17,4 +17,6 @@ export interface Artwork {
   position: number;
   tags: string[];
   publishedAt: Date | null;
+  /** The full version on Patreon; "Ver completa en Patreon" leads there through /r/obra/{id}. */
+  patreonPostUrl: string | null;
 }

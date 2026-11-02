@@ -16,6 +16,7 @@ export function buildArtwork(overrides: Partial<Artwork> = {}): Artwork {
     position: 0,
     tags: [],
     publishedAt: null,
+    patreonPostUrl: null,
     ...overrides,
   };
 }
@@ -30,6 +31,14 @@ export function describeArtworkRepositoryContract(
 
     beforeEach(async () => {
       repository = await setup();
+    });
+
+    it("round-trips the link to the Patreon post", async () => {
+      const artwork = buildArtwork({ patreonPostUrl: "https://www.patreon.com/posts/obra-1" });
+      await repository.save(artwork);
+      expect((await repository.findById(artwork.id))?.patreonPostUrl).toBe(
+        "https://www.patreon.com/posts/obra-1",
+      );
     });
 
     it("saves an artwork and finds it by id and by slug", async () => {
