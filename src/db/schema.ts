@@ -157,6 +157,8 @@ export const events = pgTable(
     sessionHash: text("session_hash").notNull(),
     referrer: text("referrer"),
     country: text("country"),
+    /** Gallery language of the visitor (en/es); null for events recorded before it existed. */
+    locale: text("locale"),
     createdAt: createdAt(),
   },
   (t) => [

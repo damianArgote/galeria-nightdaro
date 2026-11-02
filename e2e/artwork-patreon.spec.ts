@@ -49,7 +49,7 @@ test.describe("artwork linked to its Patreon post", () => {
       .filter({ hasText: TITLE })
       .getByRole("button")
       .click();
-    const button = publicPage.getByRole("link", { name: "Ver completa en Patreon" });
+    const button = publicPage.getByRole("link", { name: "See it in full on Patreon" });
     await expect(button).toHaveAttribute("href", /^\/r\/obra\/[0-9a-f-]{36}$/);
     await button.click();
     await expect(publicPage).toHaveURL(POST);
@@ -74,10 +74,9 @@ test.describe("artwork linked to its Patreon post", () => {
       .filter({ hasText: TITLE })
       .getByRole("button")
       .click();
-    await expect(secondPage.getByRole("link", { name: "Ver completa en Patreon" })).toHaveAttribute(
-      "href",
-      "/apoyar",
-    );
+    await expect(
+      secondPage.getByRole("link", { name: "See it in full on Patreon" }),
+    ).toHaveAttribute("href", "/apoyar");
     await second.close();
   });
 

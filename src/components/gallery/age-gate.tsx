@@ -3,10 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useTransition } from "react";
 import { acceptAgeGate } from "@/app/g/actions";
+import { messages, type Locale } from "./i18n";
+import { LanguageSwitcher } from "./language-switcher";
 import { track } from "./track";
 
-/** Shown to visitors without the age_ok cookie. Accepting switches to the adult variant. */
-export function AgeGate() {
+/**
+ * Shown to visitors without the age_ok cookie. Accepting switches to the adult variant. It carries
+ * its own language switcher: the one in the header is inert behind the dialog.
+ */
+export function AgeGate({ locale }: { locale: Locale }) {
+  const t = messages[locale].ageGate;
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const enter = useRef<HTMLButtonElement>(null);
@@ -33,6 +39,9 @@ export function AgeGate() {
       className="fixed inset-0 z-[80] grid place-items-center bg-[#04061a]/80 px-4 py-6 backdrop-blur-xl"
     >
       <div className="w-full max-w-[460px] rounded-md border-2 border-black bg-[#120c33] p-7 text-center shadow-[10px_10px_0_var(--brand-violet)]">
+        <div className="mb-3 flex justify-end">
+          <LanguageSwitcher locale={locale} />
+        </div>
         <div className="flex items-center justify-center gap-4" aria-hidden>
           <span className="font-brush text-7xl leading-none text-brand-hanko [text-shadow:4px_4px_0_#000]">
             十八禁
@@ -42,13 +51,9 @@ export function AgeGate() {
           </span>
         </div>
         <h2 id="age-gate-title" className="mt-3 mb-3 font-display text-3xl leading-tight">
-          Contenido para adultos <span className="text-brand-violet">+18</span>
+          {t.title} <span className="text-brand-violet">+18</span>
         </h2>
-        <p className="mb-5 text-[#cfd3ea]">
-          Esta galería tiene ilustraciones anime y fantasía con desnudos y temática sexual. Todos
-          los personajes son adultos. Para entrar confirmá que tenés 18 años o más y que es legal
-          ver este contenido donde vivís.
-        </p>
+        <p className="mb-5 text-[#cfd3ea]">{t.body}</p>
         <div className="flex flex-wrap justify-center gap-2.5">
           <button
             ref={enter}
@@ -63,14 +68,14 @@ export function AgeGate() {
               })
             }
           >
-            Tengo 18 o más, entrar
+            {t.enter}
           </button>
           <a
             href="https://www.google.com"
             rel="noopener noreferrer"
             className="rounded-full border-[1.5px] border-[#2e2470] px-5 py-3 font-bold text-paper"
           >
-            Salir
+            {t.leave}
           </a>
         </div>
       </div>

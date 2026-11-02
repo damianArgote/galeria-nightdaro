@@ -41,8 +41,8 @@ test.describe("security headers", () => {
     const violations = cspViolations(page);
 
     await page.goto("/");
-    await page.getByRole("button", { name: "Tengo 18 o más, entrar" }).click();
-    await expect(page.getByRole("dialog", { name: /Contenido para adultos/ })).toHaveCount(0);
+    await page.getByRole("button", { name: "I am 18 or older, enter" }).click();
+    await expect(page.getByRole("dialog", { name: /Adult content/ })).toHaveCount(0);
     for (const path of PUBLIC_PAGES) {
       await page.goto(path, { waitUntil: "commit" });
       await settle(page);

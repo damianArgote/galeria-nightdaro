@@ -1,5 +1,6 @@
 import { createHmac } from "node:crypto";
 import type { VisitorContext } from "@/core/analytics/analytics-event";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@/core/gallery/locale";
 import { clientIp } from "../auth/client-ip";
 
 const DEV_SALT = "local-dev-analytics-salt";
@@ -31,6 +32,25 @@ export function sessionHash(input: {
     .slice(0, 32);
 }
 
+/** Gallery language from the lang cookie (the same one the rewrites read); English otherwise. */
+function localeFrom(headers: Headers): Locale {
+  const value = headers
+    .get("cookie")
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith("lang="))
+    ?.slice("lang=".length)
+    .trim();
+  // Decoded like Next's cookie parser, so the stat matches the page the rewrites served.
+  let decoded = value;
+  try {
+    decoded = value && decodeURIComponent(value);
+  } catch {
+    // Malformed escape: not a locale either.
+  }
+  return decoded && isLocale(decoded) ? decoded : DEFAULT_LOCALE;
+}
+
 /** Turns request headers into a visitor without keeping the IP. */
 export function visitorFrom(headers: Headers, now?: Date): VisitorContext {
   const country = headers.get("cf-ipcountry") ?? headers.get("x-vercel-ip-country");
@@ -42,5 +62,6 @@ export function visitorFrom(headers: Headers, now?: Date): VisitorContext {
       now,
     }),
     country: country?.toUpperCase() ?? null,
+    locale: localeFrom(headers),
   };
 }

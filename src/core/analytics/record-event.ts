@@ -56,6 +56,7 @@ export class RecordClientEvent {
       sessionHash: visitor.sessionHash,
       referrer: referrerHost(event.referrer),
       country: countryCode(visitor.country),
+      locale: visitor.locale,
     });
   }
 }
@@ -91,6 +92,7 @@ export class RecordClick {
         sessionHash: visitor.sessionHash,
         referrer: referrerHost(referrer),
         country: countryCode(visitor.country),
+        locale: visitor.locale,
       });
     }
     return link.targetUrl;
@@ -127,6 +129,7 @@ export class RecordArtworkClick {
         sessionHash: visitor.sessionHash,
         referrer: referrerHost(referrer),
         country: countryCode(visitor.country),
+        locale: visitor.locale,
       });
     }
     return artwork.patreonPostUrl;

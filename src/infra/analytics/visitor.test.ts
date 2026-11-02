@@ -45,8 +45,23 @@ describe("visitorFrom", () => {
     expect(visitor).toEqual({
       sessionHash: sessionHash({ ip: IP, userAgent: UA, salt: "salt", now: DAY1 }),
       country: "AR",
+      locale: "en",
     });
     expect(JSON.stringify(visitor)).not.toContain(IP);
+  });
+
+  it("takes the gallery language from the lang cookie, English otherwise", () => {
+    vi.stubEnv("ANALYTICS_SALT", "salt");
+    const withCookie = (cookie: string) => visitorFrom(new Headers({ cookie })).locale;
+
+    expect(withCookie("age_ok=1; lang=es")).toBe("es");
+    expect(withCookie("lang=en")).toBe("en");
+    expect(withCookie("lang=fr")).toBe("en");
+    expect(withCookie("slang=es")).toBe("en");
+    expect(withCookie("lang= es")).toBe("es");
+    expect(withCookie("lang=%65s")).toBe("es");
+    expect(withCookie("lang=%E0")).toBe("en");
+    expect(visitorFrom(new Headers()).locale).toBe("en");
   });
 
   it("requires a secret salt in production", () => {

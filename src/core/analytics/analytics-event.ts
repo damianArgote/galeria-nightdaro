@@ -1,3 +1,5 @@
+import type { Locale } from "../gallery/locale";
+
 export const EVENT_TYPES = ["view", "click", "age_ok"] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -15,6 +17,8 @@ export interface AnalyticsEvent {
   /** Host of the referring site, never the full URL. */
   referrer: string | null;
   country: string | null;
+  /** Language the visitor was browsing the gallery in; null for events from before it existed. */
+  locale: Locale | null;
   /** Defaults to the time it is stored. */
   occurredAt?: Date;
 }
@@ -23,4 +27,5 @@ export interface AnalyticsEvent {
 export interface VisitorContext {
   sessionHash: string;
   country: string | null;
+  locale: Locale;
 }

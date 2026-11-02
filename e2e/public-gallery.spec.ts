@@ -10,8 +10,8 @@ const GOOGLEBOT = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.co
 
 async function acceptGate(page: Page) {
   await page.goto("/");
-  await page.getByRole("button", { name: "Tengo 18 o más, entrar" }).click();
-  await expect(page.getByRole("dialog", { name: /Contenido para adultos/ })).toHaveCount(0);
+  await page.getByRole("button", { name: "I am 18 or older, enter" }).click();
+  await expect(page.getByRole("dialog", { name: /Adult content/ })).toHaveCount(0);
   await expect(page.getByTestId("gallery-card").filter({ hasText: ADULT_ONLY[0]! })).toBeVisible();
 }
 
@@ -41,10 +41,10 @@ test.describe("public gallery without the age gate", () => {
     }
 
     await page.goto("/");
-    await expect(page.getByRole("dialog", { name: /Contenido para adultos/ })).toBeVisible();
+    await expect(page.getByRole("dialog", { name: /Adult content/ })).toBeVisible();
     await expect(page.getByTestId("gallery-card")).toHaveCount(SFW.length);
     await expect(page.locator("main")).toHaveAttribute("inert", "");
-    await expect(page.getByRole("button", { name: "Tengo 18 o más, entrar" })).toBeFocused();
+    await expect(page.getByRole("button", { name: "I am 18 or older, enter" })).toBeFocused();
   });
 
   test("labels the site as adult content", async ({ page }) => {
@@ -56,12 +56,12 @@ test.describe("public gallery without the age gate", () => {
     );
   });
 
-  test("Salir leaves the site", async ({ page }) => {
+  test("Leave leaves the site", async ({ page }) => {
     await page.route("https://www.google.com/**", (route) =>
       route.fulfill({ body: "<title>Google</title>", contentType: "text/html" }),
     );
     await page.goto("/");
-    await page.getByRole("link", { name: "Salir" }).click();
+    await page.getByRole("link", { name: "Leave" }).click();
     await expect(page).toHaveURL(/^https:\/\/www\.google\.com\//);
   });
 
@@ -85,16 +85,16 @@ test.describe("public gallery without the age gate", () => {
     page,
   }) => {
     await acceptGate(page);
-    const tabs = page.getByRole("navigation", { name: "Tipo de contenido" });
+    const tabs = page.getByRole("navigation", { name: "Content type" });
     await tabs.scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, -80));
     const before = await page.evaluate(() => window.scrollY);
     expect(before).toBeGreaterThan(300);
 
     for (const [label, path] of [
-      ["En proceso", "/en-proceso"],
+      ["In progress", "/en-proceso"],
       ["Timelapses", "/timelapses"],
-      ["Terminado", "/"],
+      ["Finished", "/"],
     ] as const) {
       await tabs.getByRole("link", { name: new RegExp(label) }).click();
       await expect(page).toHaveURL(new RegExp(`${path.replace("/", "\\/")}$`));
@@ -128,9 +128,58 @@ test.describe("public gallery without the age gate", () => {
   });
 
   test("/g/* cannot be requested directly", async ({ page }) => {
-    for (const path of ["/g/adult", "/g/adult/en-proceso", "/g/sfw"]) {
+    for (const path of ["/g/adult", "/g/en/adult/en-proceso", "/g/es/sfw/inicio", "/g/sfw"]) {
       expect((await page.request.get(path)).status()).toBe(404);
     }
+  });
+});
+
+test.describe("gallery language", () => {
+  test("is English by default and the switcher changes it to Spanish and back", async ({
+    page,
+    context,
+  }) => {
+    await page.goto("/");
+    // Before the age gate, the header is inert: the dialog has its own switcher.
+    const switcher = page.getByRole("dialog").getByTestId("language-switcher");
+    await expect(page.getByRole("heading", { name: "Fresh off the drawing board" })).toBeVisible();
+    await expect(page.locator("div[lang]").first()).toHaveAttribute("lang", "en");
+    await expect(switcher.getByRole("button", { name: "English" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    await switcher.getByRole("button", { name: "Español" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Lo último de la mesa de dibujo" }),
+    ).toBeVisible();
+    await expect(page.getByRole("dialog", { name: /Contenido para adultos/ })).toBeVisible();
+    await expect(page.locator("div[lang]").first()).toHaveAttribute("lang", "es");
+    expect((await context.cookies()).find((c) => c.name === "lang")?.value).toBe("es");
+
+    // Remembered on every page, before and after the age gate.
+    await page.goto("/apoyar");
+    await expect(page.getByRole("heading", { name: "Elegí tu nivel" })).toBeVisible();
+    await page.getByRole("button", { name: "Tengo 18 o más, entrar" }).click();
+    await expect(page.getByRole("dialog", { name: /Contenido para adultos/ })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Elegí tu nivel" })).toBeVisible();
+
+    await page
+      .getByRole("banner")
+      .getByTestId("language-switcher")
+      .getByRole("button", { name: "English" })
+      .click();
+    await expect(page.getByRole("heading", { name: "Choose your tier" })).toBeVisible();
+    expect((await context.cookies()).find((c) => c.name === "lang")?.value).toBe("en");
+  });
+
+  test("crawlers always get English, even with the Spanish cookie", async ({ browser }) => {
+    const bot = await browser.newContext({ userAgent: GOOGLEBOT });
+    await bot.addCookies([{ name: "lang", value: "es", url: "http://localhost:3100" }]);
+    const html = await (await bot.request.get("/")).text();
+    expect(html).toContain("Fresh off the drawing board");
+    expect(html).not.toContain("Lo último de la mesa de dibujo");
+    await bot.close();
   });
 });
 
@@ -138,7 +187,7 @@ test.describe("public gallery like the mockup", () => {
   test("hero, tab counters, watermark, protection section and blur", async ({ page }) => {
     await acceptGate(page);
 
-    const banner = page.getByRole("img", { name: /^NightDaro · Tinta, pin-up/ });
+    const banner = page.getByRole("img", { name: /^NightDaro · Ink, pin-up/ });
     await expect(banner).toHaveAttribute("src", "/banner.jpg");
     await expect
       .poll(() => banner.evaluate((img: HTMLImageElement) => img.naturalWidth))
@@ -151,16 +200,16 @@ test.describe("public gallery like the mockup", () => {
     const finished = DEMO_ARTWORKS.filter((a) => a.kind === "finished").length;
     await expect(page.getByTestId("count-finished")).toHaveText(String(finished));
     await expect(page.getByTestId("card-watermark").first()).toContainText("@nightdaro");
-    await expect(page.locator("#proteccion")).toContainText("Cómo se protege el contenido");
-    for (const item of ["Galería", "Suscripción", "Protección", "Redes"]) {
+    await expect(page.locator("#proteccion")).toContainText("How the content is protected");
+    for (const item of ["Gallery", "Subscription", "Protection", "Socials"]) {
       await expect(
-        page.getByRole("navigation", { name: "Secciones" }).getByRole("link", { name: item }),
+        page.getByRole("navigation", { name: "Sections" }).getByRole("link", { name: item }),
       ).toBeVisible();
     }
 
     await page.evaluate(() => window.dispatchEvent(new Event("blur")));
     await expect(page.locator("html")).toHaveClass(/shielded/);
-    await expect(page.getByText("Contenido protegido · volvé a la ventana")).toBeVisible();
+    await expect(page.getByText("Protected content · return to the window")).toBeVisible();
     await page.evaluate(() => window.dispatchEvent(new Event("focus")));
     await expect(page.locator("html")).not.toHaveClass(/shielded/);
   });
@@ -178,7 +227,7 @@ test.describe("public gallery like the mockup", () => {
     await page.waitForTimeout(300);
 
     await expect(page.locator("html")).not.toHaveClass(/shielded/);
-    await expect(page.getByText("Contenido protegido · volvé a la ventana")).toHaveCount(0);
+    await expect(page.getByText("Protected content · return to the window")).toHaveCount(0);
   });
 
   test("the sfw counters never include adult artworks", async ({ page }) => {

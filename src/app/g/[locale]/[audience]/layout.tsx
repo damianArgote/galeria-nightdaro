@@ -5,8 +5,8 @@ import { ProtectionShield } from "@/components/gallery/protection-shield";
 import { SiteHeader } from "@/components/gallery/site-header";
 import { ViewTracker } from "@/components/gallery/view-tracker";
 import { container } from "@/infra/container";
-import { audienceFrom } from "../audience-params";
-import { body, brush, display, mono } from "../fonts";
+import { audienceFrom, localeFrom } from "../../audience-params";
+import { body, brush, display, mono } from "../../fonts";
 
 export const revalidate = 300;
 export const dynamicParams = true;
@@ -14,7 +14,12 @@ export function generateStaticParams() {
   return [];
 }
 
-export async function generateMetadata(): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const locale = await localeFrom(params);
   const settings = await container.getSiteSettings.execute();
   const title = settings.seo.title ?? settings.name;
   return {
@@ -24,7 +29,13 @@ export async function generateMetadata(): Promise<Metadata> {
     // Adult content labels for parental filters: rating=adult and the RTA label.
     other: { rating: "adult", RATING: "RTA-5042-1996-1400-1577-RTA" },
     // public/og.jpg is a 1200 × 630 crop of the banner, sfw like everything crawlers see.
-    openGraph: { type: "website", siteName: settings.name, title, images: "/og.jpg" },
+    openGraph: {
+      type: "website",
+      locale: locale === "es" ? "es_AR" : "en_US",
+      siteName: settings.name,
+      title,
+      images: "/og.jpg",
+    },
     twitter: { card: "summary_large_image", images: "/og.jpg" },
   };
 }
@@ -34,21 +45,23 @@ export default async function GalleryLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: Promise<{ audience: string }>;
+  params: Promise<{ locale: string; audience: string }>;
 }) {
   const audience = await audienceFrom(params);
+  const locale = await localeFrom(params);
   const settings = await container.getSiteSettings.execute();
 
   return (
     <div
+      lang={locale}
       className={`${display.variable} ${body.variable} ${brush.variable} ${mono.variable} min-h-dvh bg-[#07041a] font-jp text-paper`}
     >
       <ViewTracker />
-      <ProtectionShield />
-      <SiteHeader name={settings.name} />
+      <ProtectionShield locale={locale} />
+      <SiteHeader name={settings.name} locale={locale} />
       <main>{children}</main>
-      <SiteFooter name={settings.name} socials={settings.socials} />
-      {audience === "sfw" && settings.ageGateEnabled && <AgeGate />}
+      <SiteFooter name={settings.name} socials={settings.socials} locale={locale} />
+      {audience === "sfw" && settings.ageGateEnabled && <AgeGate locale={locale} />}
     </div>
   );
 }

@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { messages, type Locale } from "./i18n";
 
 /**
  * Blurs the protected art while the window is not focused or the tab is hidden, which defeats
  * many capture tools that steal focus. A deterrent, not a guarantee. Focus moving into an iframe
  * of the page itself (the timelapse player, on play) also fires `blur`, and is not shielded.
  */
-export function ProtectionShield() {
+export function ProtectionShield({ locale }: { locale: Locale }) {
   const [shielded, setShielded] = useState(false);
 
   useEffect(() => {
@@ -34,7 +35,7 @@ export function ProtectionShield() {
   return (
     <div role="status" className="pointer-events-none fixed inset-0 z-[70] grid place-items-center">
       <div className="rounded-xl border border-brand-violet bg-black px-5 py-3.5 font-label text-[13px]">
-        Contenido protegido · volvé a la ventana
+        {messages[locale].shield}
       </div>
     </div>
   );

@@ -140,7 +140,7 @@ test.describe("admin panel", () => {
     await expect(
       cards.filter({ hasText: "Tier 2" }).getByTestId("tier-benefits").getByRole("listitem"),
     ).toHaveText(["✦Arte NSFW exclusivo", "✦Acceso anticipado"]);
-    await expect(cards.filter({ hasText: "El más elegido" })).toHaveCount(1);
-    await expect(cards.filter({ hasText: "El más elegido" })).toContainText("Tier 3");
+    await expect(cards.filter({ hasText: "Most popular" })).toHaveCount(1);
+    await expect(cards.filter({ hasText: "Most popular" })).toContainText("Tier 3");
   });
 });

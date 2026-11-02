@@ -1,6 +1,9 @@
 import Link from "next/link";
+import { messages, type Locale } from "./i18n";
+import { LanguageSwitcher } from "./language-switcher";
 
-export function SiteHeader({ name }: { name: string }) {
+export function SiteHeader({ name, locale }: { name: string; locale: Locale }) {
+  const t = messages[locale].header;
   const [first, ...rest] = name.toUpperCase().split(/(?=DARO)/);
   return (
     <header className="sticky top-0 z-40 border-b border-[#2e2470] bg-[#07041a]/85 backdrop-blur-md">
@@ -16,23 +19,26 @@ export function SiteHeader({ name }: { name: string }) {
             <b className="font-normal text-brand-violet">{rest.join("")}</b>
           </span>
         </Link>
-        <nav aria-label="Secciones" className="hidden gap-[22px] text-sm text-[#aaa4d8] sm:flex">
+        <nav aria-label={t.sections} className="hidden gap-[22px] text-sm text-[#aaa4d8] sm:flex">
           <Link href="/#galeria" className="hover:text-paper">
-            Galería
+            {t.gallery}
           </Link>
           <Link href="/apoyar" className="hover:text-paper">
-            Suscripción
+            {t.subscription}
           </Link>
           <Link href="/#proteccion" className="hover:text-paper">
-            Protección
+            {t.protection}
           </Link>
           <a href="#redes" className="hover:text-paper">
-            Redes
+            {t.socials}
           </a>
         </nav>
-        <Link href="/apoyar" className="gallery-cta px-4 py-2 text-sm">
-          Patreon
-        </Link>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher locale={locale} />
+          <Link href="/apoyar" className="gallery-cta px-4 py-2 text-sm">
+            Patreon
+          </Link>
+        </div>
       </div>
     </header>
   );

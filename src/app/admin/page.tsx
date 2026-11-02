@@ -11,6 +11,8 @@ import { ANALYTICS_TIME_ZONE } from "@/infra/analytics/drizzle-event-repository"
 import { cn } from "@/lib/utils";
 
 const PRESETS = [7, 14, 30] as const;
+const LOCALE_NAMES = { en: "Inglés", es: "Español" } as const;
+
 const PLATFORM_NAMES: Record<string, string> = {
   patreon: "Patreon",
   onlyfans: "OnlyFans",
@@ -197,6 +199,28 @@ export default async function SummaryPage({
                   detail: PLATFORM_NAMES[t.platform] ?? t.platform,
                   value: t.clicks,
                 }))}
+              />
+            </div>
+          </Panel>
+          <Panel>
+            <PanelHeader
+              title="Visitas por idioma"
+              description="Idioma en que se vio la galería pública."
+            />
+            <div data-testid="visits-by-locale">
+              <BarList
+                color="#1494c2"
+                empty="Todavía no hay visitas."
+                rows={
+                  summary.visits === 0
+                    ? []
+                    : summary.visitsByLocale.map((v) => ({
+                        key: v.locale,
+                        label: LOCALE_NAMES[v.locale],
+                        detail: `${number(v.uniqueVisitors)} únicos`,
+                        value: v.visits,
+                      }))
+                }
               />
             </div>
           </Panel>
