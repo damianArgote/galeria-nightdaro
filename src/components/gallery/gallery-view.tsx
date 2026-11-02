@@ -6,21 +6,13 @@ import type { Audience } from "@/core/gallery/audience";
 import { container } from "@/infra/container";
 import { cn } from "@/lib/utils";
 import { ArtworkGrid } from "./artwork-grid";
+import { messages, type Locale } from "./i18n";
 import { ProtectionSection } from "./protection-section";
 
-const TABS: { kind: ArtworkKind; href: string; label: string; kanji: string }[] = [
-  { kind: "finished", href: "/", label: "Terminado", kanji: "完成" },
-  { kind: "wip", href: "/en-proceso", label: "En proceso", kanji: "制作中" },
-  { kind: "timelapse", href: "/timelapses", label: "Timelapses", kanji: "動画" },
-];
-
-const MARQUEE = [
-  "新作毎週",
-  "NUEVO ARTE CADA SEMANA",
-  "十八禁",
-  "SOLO ADULTOS",
-  "パトレオン限定",
-  "EXCLUSIVO PATREON",
+const TABS: { kind: ArtworkKind; href: string; kanji: string }[] = [
+  { kind: "finished", href: "/", kanji: "完成" },
+  { kind: "wip", href: "/en-proceso", kanji: "制作中" },
+  { kind: "timelapse", href: "/timelapses", kanji: "動画" },
 ];
 
 /** Banner of the visual reference, served from /public until the panel can upload one. */
@@ -28,7 +20,16 @@ const BANNER = "/banner.jpg";
 const hasBanner = () => existsSync(join(process.cwd(), "public", BANNER));
 
 /** One tab of the public gallery: hero, tabs (plain links), the grid and how content is protected. */
-export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audience: Audience }) {
+export async function GalleryView({
+  kind,
+  audience,
+  locale,
+}: {
+  kind: ArtworkKind;
+  audience: Audience;
+  locale: Locale;
+}) {
+  const t = messages[locale];
   const [settings, artworks, counts, tags] = await Promise.all([
     container.getSiteSettings.execute(),
     container.listPublicGallery.execute({ kind, audience }),
@@ -53,7 +54,7 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
             {/* eslint-disable-next-line @next/next/no-img-element -- static banner, already sized */}
             <img
               src={BANNER}
-              alt="NightDaro · Tinta, pin-up, fantasía +18 · Ilustración anime sin censura"
+              alt={t.hero.bannerAlt}
               width={1600}
               height={685}
               draggable={false}
@@ -94,19 +95,19 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
           )}
           <div className="flex flex-wrap gap-3">
             <Link href="/apoyar" className="gallery-cta px-5 py-3">
-              Desbloquear todo en Patreon
+              {t.hero.unlock}
             </Link>
             <a
               href="#galeria"
               className="rounded-full border-[1.5px] border-[#2e2470] px-5 py-3 font-bold text-paper"
             >
-              Ver la galería
+              {t.hero.viewGallery}
             </a>
           </div>
           {tags.length > 0 && (
             <ul
               className="mt-6 flex flex-wrap gap-2"
-              aria-label="Etiquetas"
+              aria-label={t.hero.tags}
               data-testid="hero-tags"
             >
               {tags.map((tag) => (
@@ -127,14 +128,16 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
         className="relative z-[5] -my-1.5 -rotate-[1.2deg] overflow-hidden border-y-[3px] border-black bg-gradient-to-r from-brand-violet via-brand-sky to-brand-green text-[#12002a]"
       >
         <div className="flex w-max gap-7 py-2.5 font-display text-lg whitespace-nowrap motion-safe:animate-[marquee_26s_linear_infinite]">
-          {[...MARQUEE, ...MARQUEE, ...MARQUEE, ...MARQUEE].map((text, i) => (
-            <span
-              key={i}
-              className={/[一-龯ぁ-んァ-ン]/.test(text) ? "font-brush text-xl" : undefined}
-            >
-              ★ {text}
-            </span>
-          ))}
+          {[...t.hero.marquee, ...t.hero.marquee, ...t.hero.marquee, ...t.hero.marquee].map(
+            (text, i) => (
+              <span
+                key={i}
+                className={/[一-龯ぁ-んァ-ン]/.test(text) ? "font-brush text-xl" : undefined}
+              >
+                ★ {text}
+              </span>
+            ),
+          )}
         </div>
       </div>
 
@@ -146,18 +149,15 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
                 <span className="mr-2.5 font-brush text-[15px] tracking-[0.2em] text-paper normal-case">
                   ギャラリー
                 </span>
-                Galería
+                {t.gallery.eyebrow}
               </p>
               <h2 className="font-display text-[clamp(34px,5vw,54px)] leading-none">
-                Lo último de la mesa de dibujo
+                {t.gallery.title}
               </h2>
-              <p className="mt-2 max-w-[46ch] text-[#aaa4d8]">
-                Las vistas previas públicas son de baja resolución y llevan marca de agua. Lo
-                marcado +18 solo se ve completo en Patreon.
-              </p>
+              <p className="mt-2 max-w-[46ch] text-[#aaa4d8]">{t.gallery.intro}</p>
             </div>
             <nav
-              aria-label="Tipo de contenido"
+              aria-label={t.gallery.tabsLabel}
               className="flex flex-wrap gap-1.5 rounded-sm border-[3px] border-black bg-[#120c33] p-1.5 shadow-[4px_4px_0_#000]"
             >
               {TABS.map((tab) => (
@@ -178,7 +178,7 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
                   >
                     {tab.kanji}
                   </span>
-                  {tab.label}
+                  {t.gallery.tabs[tab.kind]}
                   <span
                     className="ml-1.5 font-label text-[11px] opacity-70"
                     data-testid={`count-${tab.kind}`}
@@ -189,10 +189,10 @@ export async function GalleryView({ kind, audience }: { kind: ArtworkKind; audie
               ))}
             </nav>
           </div>
-          <ArtworkGrid artworks={artworks} />
+          <ArtworkGrid artworks={artworks} locale={locale} />
         </div>
       </section>
-      <ProtectionSection />
+      <ProtectionSection locale={locale} />
     </>
   );
 }

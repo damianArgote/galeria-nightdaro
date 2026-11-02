@@ -1,5 +1,7 @@
 export const AGE_COOKIE = "age_ok";
 export const AGE_COOKIE_MAX_AGE = 365 * 24 * 60 * 60;
+/** Language of the public gallery: English unless the visitor picked Spanish. */
+export const LANG_COOKIE = "lang";
 
 /** Public gallery paths and the path each one maps to inside /g/[audience]. */
 export const GALLERY_ROUTES = [
@@ -31,23 +33,24 @@ type Rewrite = {
 };
 
 /**
- * Picks the static variant of each gallery page, in order: crawlers (or no user agent) → sfw,
- * age_ok=1 → adult, anyone else → sfw. Done with config rewrites, not middleware: a middleware
- * rewrite turns off the ISR cache of the target page.
+ * Picks the static variant of each gallery page, in order: crawlers (or no user agent) → sfw in
+ * English, then age_ok=1 → adult, anyone else → sfw, each in Spanish with lang=es and in English
+ * otherwise. Done with config rewrites, not middleware: a middleware rewrite turns off the ISR
+ * cache of the target page.
  */
 export function galleryRewrites(): Rewrite[] {
+  const adult = { type: "cookie", key: AGE_COOKIE, value: "1" } as const;
+  const spanish = { type: "cookie", key: LANG_COOKIE, value: "es" } as const;
   return GALLERY_ROUTES.flatMap(({ source, target }) => [
     {
       source,
-      destination: `/g/sfw${target}`,
+      destination: `/g/en/sfw${target}`,
       has: [{ type: "header", key: "user-agent", value: CRAWLER_PATTERN }],
     },
-    { source, destination: `/g/sfw${target}`, missing: [{ type: "header", key: "user-agent" }] },
-    {
-      source,
-      destination: `/g/adult${target}`,
-      has: [{ type: "cookie", key: AGE_COOKIE, value: "1" }],
-    },
-    { source, destination: `/g/sfw${target}` },
+    { source, destination: `/g/en/sfw${target}`, missing: [{ type: "header", key: "user-agent" }] },
+    { source, destination: `/g/es/adult${target}`, has: [adult, spanish] },
+    { source, destination: `/g/en/adult${target}`, has: [adult] },
+    { source, destination: `/g/es/sfw${target}`, has: [spanish] },
+    { source, destination: `/g/en/sfw${target}` },
   ]);
 }

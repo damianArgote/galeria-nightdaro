@@ -14,11 +14,17 @@ const ALLOWED_WITHOUT_GUARD = new Set([
   "src/app/admin/actions.ts#logout",
   "src/app/login/actions.ts#login",
   "src/app/g/actions.ts#acceptAgeGate",
+  // Only stores the gallery language (en/es) in a cookie.
+  "src/app/g/actions.ts#setGalleryLocale",
   // Only clears the cookie; the session already ended when the password changed.
   "src/app/cambiar-clave/actions.ts#finishPasswordChange",
 ]);
-/** Its FormData goes to Auth.js signIn, and AuthenticateAdmin validates it with Zod. */
-const VALIDATED_ELSEWHERE = new Set(["src/app/login/actions.ts#login"]);
+/** login: its FormData goes to Auth.js signIn, and AuthenticateAdmin validates it with Zod. */
+const VALIDATED_ELSEWHERE = new Set([
+  "src/app/login/actions.ts#login",
+  // z.enum(LOCALES).safeParse: runAction would revalidate the whole site on a visitor's click.
+  "src/app/g/actions.ts#setGalleryLocale",
+]);
 
 function serverActionFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {

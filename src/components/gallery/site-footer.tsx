@@ -1,4 +1,5 @@
 import type { SiteSocials } from "@/core/site/site-settings";
+import { messages, type Locale } from "./i18n";
 
 const LABELS: Record<keyof SiteSocials, string> = {
   instagram: "IG",
@@ -15,7 +16,16 @@ function handle(url: string) {
   }
 }
 
-export function SiteFooter({ name, socials }: { name: string; socials: SiteSocials }) {
+export function SiteFooter({
+  name,
+  socials,
+  locale,
+}: {
+  name: string;
+  socials: SiteSocials;
+  locale: Locale;
+}) {
+  const t = messages[locale].footer;
   const contact = process.env.CONTACT_EMAIL;
   return (
     <footer id="redes" className="border-t border-[#2e2470] py-11">
@@ -42,12 +52,11 @@ export function SiteFooter({ name, socials }: { name: string; socials: SiteSocia
           </a>
         </div>
         <p className="m-0 max-w-[60ch] text-[13px] text-[#aaa4d8]">
-          © {new Date().getFullYear()} {name}. Todas las ilustraciones son obra original o fan art
-          de personajes adultos. Prohibida su redistribución.
+          © {new Date().getFullYear()} {name}. {t.rights}
           {contact && (
             <>
               {" "}
-              Contacto:{" "}
+              {t.contact}{" "}
               <a href={`mailto:${contact}`} className="underline">
                 {contact}
               </a>

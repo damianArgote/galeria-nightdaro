@@ -24,16 +24,23 @@ describe("gallery routing", () => {
     expect(isCrawler(null)).toBe(true);
   });
 
-  it("checks crawlers before the cookie and falls back to sfw for every page", () => {
+  it("checks crawlers before the cookies and falls back to sfw in English for every page", () => {
     const home = galleryRewrites().filter((r) => r.source === "/");
 
     expect(home.map((r) => r.destination)).toEqual([
-      "/g/sfw/inicio",
-      "/g/sfw/inicio",
-      "/g/adult/inicio",
-      "/g/sfw/inicio",
+      "/g/en/sfw/inicio",
+      "/g/en/sfw/inicio",
+      "/g/es/adult/inicio",
+      "/g/en/adult/inicio",
+      "/g/es/sfw/inicio",
+      "/g/en/sfw/inicio",
     ]);
-    expect(home[2]!.has).toEqual([{ type: "cookie", key: "age_ok", value: "1" }]);
+    expect(home[2]!.has).toEqual([
+      { type: "cookie", key: "age_ok", value: "1" },
+      { type: "cookie", key: "lang", value: "es" },
+    ]);
+    expect(home[3]!.has).toEqual([{ type: "cookie", key: "age_ok", value: "1" }]);
+    expect(home[4]!.has).toEqual([{ type: "cookie", key: "lang", value: "es" }]);
     expect(home.at(-1)).not.toHaveProperty("has");
     expect(new Set(galleryRewrites().map((r) => r.source)).size).toBe(5);
   });

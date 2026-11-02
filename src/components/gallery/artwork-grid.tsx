@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import type { PublicArtwork } from "@/core/gallery/public-gallery";
 import { cn } from "@/lib/utils";
+import { messages, type Locale } from "./i18n";
 import { PatreonButton } from "./patreon-button";
 import { track } from "./track";
 
@@ -13,15 +14,16 @@ const NUMERALS = "一二三四五六七八九十";
 export const mediaUrl = (id: string, variant: "thumb" | "preview" | "player") =>
   `/media/${id}/${variant}`;
 
-function Badge({ artwork }: { artwork: PublicArtwork }) {
+function Badge({ artwork, locale }: { artwork: PublicArtwork; locale: Locale }) {
+  const t = messages[locale].card;
   const [label, tone] =
     artwork.rating === "explicit"
-      ? ["+18 · Solo en Patreon", "bg-brand-violet text-[#12002a]"]
+      ? [t.explicit, "bg-brand-violet text-[#12002a]"]
       : artwork.rating === "suggestive"
         ? ["+18", "bg-brand-hanko text-[#2a0020]"]
         : artwork.kind === "wip"
-          ? ["En proceso", "bg-brand-sky text-[#00222a]"]
-          : ["Público", "bg-brand-green text-[#04210c]"];
+          ? [t.wip, "bg-brand-sky text-[#00222a]"]
+          : [t.public, "bg-brand-green text-[#04210c]"];
   return (
     <span
       className={cn(
@@ -34,7 +36,7 @@ function Badge({ artwork }: { artwork: PublicArtwork }) {
   );
 }
 
-function Lock({ big = false }: { big?: boolean }) {
+function Lock({ big = false, locale }: { big?: boolean; locale: Locale }) {
   return (
     <div className="absolute inset-0 grid place-content-center place-items-center gap-2 bg-gradient-to-b from-[#07091a]/10 to-[#07091a]/80 p-3.5 text-center">
       <strong
@@ -45,7 +47,7 @@ function Lock({ big = false }: { big?: boolean }) {
       >
         十八禁
       </strong>
-      <small className="text-[13px] text-[#e8e2ff]">Versión censurada · completa en Patreon</small>
+      <small className="text-[13px] text-[#e8e2ff]">{messages[locale].card.censored}</small>
     </div>
   );
 }
@@ -94,10 +96,9 @@ function ProtectedImage({
   );
 }
 
-const WATERMARK = "NIGHTDARO · @nightdaro · vista previa · ".repeat(4);
-
 /** Text watermark over every card, like the mockup; the image itself is watermarked too. */
-function Watermark() {
+function Watermark({ locale }: { locale: Locale }) {
+  const text = messages[locale].card.watermark.repeat(4);
   return (
     <div
       aria-hidden
@@ -105,13 +106,13 @@ function Watermark() {
       className="pointer-events-none absolute inset-0 z-[1] scale-[1.6] -rotate-[24deg] overflow-hidden text-center font-label text-[11px] leading-[3.2] whitespace-nowrap text-white opacity-[0.22]"
     >
       {Array.from({ length: 24 }, (_, i) => (
-        <div key={i}>{WATERMARK}</div>
+        <div key={i}>{text}</div>
       ))}
     </div>
   );
 }
 
-export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
+export function ArtworkGrid({ artworks, locale }: { artworks: PublicArtwork[]; locale: Locale }) {
   const [open, setOpen] = useState<PublicArtwork | null>(null);
 
   if (artworks.length === 0) {
@@ -120,7 +121,7 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
         <span aria-hidden className="block font-brush text-3xl text-paper/50">
           空
         </span>
-        Todavía no hay obras en esta pestaña.
+        {messages[locale].gallery.empty}
       </p>
     );
   }
@@ -153,7 +154,7 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
                 >
                   第{NUMERALS[index % 10]}話
                 </span>
-                <Watermark />
+                <Watermark locale={locale} />
                 {artwork.kind === "timelapse" && (
                   <span aria-hidden className="absolute inset-0 grid place-items-center">
                     <span className="grid size-14 place-items-center rounded-full border-2 border-paper bg-black/60">
@@ -161,8 +162,8 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
                     </span>
                   </span>
                 )}
-                {artwork.rating === "explicit" && <Lock />}
-                <Badge artwork={artwork} />
+                {artwork.rating === "explicit" && <Lock locale={locale} />}
+                <Badge artwork={artwork} locale={locale} />
               </div>
               <div className="flex flex-col gap-0.5 border-t-[3px] border-black px-3.5 pt-3 pb-3.5">
                 <h3 className="text-base font-bold">{artwork.title}</h3>
@@ -174,12 +175,21 @@ export function ArtworkGrid({ artworks }: { artworks: PublicArtwork[] }) {
           </li>
         ))}
       </ul>
-      {open && <Lightbox artwork={open} onClose={() => setOpen(null)} />}
+      {open && <Lightbox artwork={open} locale={locale} onClose={() => setOpen(null)} />}
     </>
   );
 }
 
-function Lightbox({ artwork, onClose }: { artwork: PublicArtwork; onClose: () => void }) {
+function Lightbox({
+  artwork,
+  locale,
+  onClose,
+}: {
+  artwork: PublicArtwork;
+  locale: Locale;
+  onClose: () => void;
+}) {
+  const t = messages[locale].lightbox;
   const close = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -191,10 +201,10 @@ function Lightbox({ artwork, onClose }: { artwork: PublicArtwork; onClose: () =>
 
   const kind =
     artwork.rating === "explicit"
-      ? "+18 · Exclusivo de Patreon"
+      ? t.explicitKind
       : artwork.kind === "timelapse"
-        ? "Timelapse"
-        : "Vista previa · baja resolución";
+        ? t.timelapseKind
+        : t.previewKind;
 
   return (
     <div
@@ -209,7 +219,7 @@ function Lightbox({ artwork, onClose }: { artwork: PublicArtwork; onClose: () =>
           ref={close}
           type="button"
           onClick={onClose}
-          aria-label="Cerrar"
+          aria-label={t.close}
           className="float-right text-2xl leading-none text-[#aaa4d8]"
         >
           ×
@@ -232,20 +242,18 @@ function Lightbox({ artwork, onClose }: { artwork: PublicArtwork; onClose: () =>
           ) : (
             <ProtectedImage artwork={artwork} variant="preview" />
           )}
-          {artwork.rating === "explicit" && <Lock big />}
+          {artwork.rating === "explicit" && <Lock big locale={locale} />}
         </div>
         <p className="mb-4 text-[#aaa4d8]">
-          {artwork.rating === "explicit"
-            ? "Esta pieza no se publica completa en la web. En Patreon la ves sin censura y en alta resolución."
-            : "Vista en baja resolución con marca de agua. La versión en alta y sin marca está en Patreon."}
+          {artwork.rating === "explicit" ? t.explicitText : t.previewText}
         </p>
         <div className="flex flex-wrap gap-2.5">
-          <PatreonButton artwork={artwork} className="px-5 py-3" />
+          <PatreonButton artwork={artwork} locale={locale} className="px-5 py-3" />
           <Link
             href={`/obra/${artwork.slug}`}
             className="rounded-full border-[1.5px] border-[#2e2470] px-5 py-3 font-bold text-paper"
           >
-            Ficha de la obra
+            {t.details}
           </Link>
         </div>
       </div>

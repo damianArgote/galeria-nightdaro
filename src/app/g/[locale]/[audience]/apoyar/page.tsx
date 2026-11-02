@@ -1,26 +1,33 @@
 import type { Metadata } from "next";
 import { container } from "@/infra/container";
 import { cn } from "@/lib/utils";
-import { audienceFrom } from "../../audience-params";
+import { messages, type Locale } from "@/components/gallery/i18n";
+import { audienceFrom, localeFrom } from "../../../audience-params";
 
 export const revalidate = 300;
-export const metadata: Metadata = { title: "Apoyar" };
+type Params = Promise<{ locale: string; audience: string }>;
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  return { title: messages[await localeFrom(params)].support.metaTitle };
+}
 
 const PLATFORM_NAMES = { patreon: "Patreon", onlyfans: "OnlyFans", fansly: "Fansly" } as const;
 const KANJI = ["下書", "墨", "彩色", "極", "夜"];
 /** Two tiers sit side by side instead of leaving an empty third column. */
 const COLUMNS = ["", "md:grid-cols-1 md:max-w-md", "md:grid-cols-2 md:max-w-3xl", "md:grid-cols-3"];
 
-function price(cents: number, currency: string) {
-  const amount = new Intl.NumberFormat("es-AR", {
+function price(cents: number, currency: string, locale: Locale) {
+  const amount = new Intl.NumberFormat(messages[locale].numberLocale, {
     minimumFractionDigits: cents % 100 ? 2 : 0,
     maximumFractionDigits: 2,
   }).format(cents / 100);
   return currency === "USD" ? `US$${amount}` : `${amount} ${currency}`;
 }
 
-export default async function SupportPage({ params }: { params: Promise<{ audience: string }> }) {
+export default async function SupportPage({ params }: { params: Params }) {
   await audienceFrom(params);
+  const locale = await localeFrom(params);
+  const t = messages[locale].support;
   const tiers = await container.listPublicTiers.execute();
 
   return (
@@ -30,13 +37,11 @@ export default async function SupportPage({ params }: { params: Promise<{ audien
           <span className="mr-2.5 font-brush text-[15px] tracking-[0.2em] text-paper normal-case">
             サポート
           </span>
-          Suscripción
+          {t.eyebrow}
         </p>
-        <h1 className="mb-8 font-display text-[clamp(34px,5vw,54px)] leading-none">
-          Elegí tu nivel
-        </h1>
+        <h1 className="mb-8 font-display text-[clamp(34px,5vw,54px)] leading-none">{t.title}</h1>
         {tiers.length === 0 ? (
-          <p className="text-[#aaa4d8]">Pronto vas a poder suscribirte desde acá.</p>
+          <p className="text-[#aaa4d8]">{t.empty}</p>
         ) : (
           <ul className={cn("grid gap-[18px]", COLUMNS[Math.min(tiers.length, 3)])}>
             {tiers.map((tier, i) => {
@@ -53,7 +58,7 @@ export default async function SupportPage({ params }: { params: Promise<{ audien
                 >
                   {hot && (
                     <span className="absolute -top-3.5 left-6 rounded-full bg-brand-violet px-2.5 py-1 font-label text-[11px] tracking-[0.06em] text-[#12002a]">
-                      El más elegido
+                      {t.highlighted}
                     </span>
                   )}
                   <div className="flex items-start justify-between gap-3">
@@ -71,8 +76,8 @@ export default async function SupportPage({ params }: { params: Promise<{ audien
                     </span>
                   </div>
                   <p className="font-display text-[44px] leading-none">
-                    {price(tier.priceCents, tier.currency)}{" "}
-                    <small className="font-jp text-[15px] text-[#aaa4d8]">/ mes</small>
+                    {price(tier.priceCents, tier.currency, locale)}{" "}
+                    <small className="font-jp text-[15px] text-[#aaa4d8]">{t.perMonth}</small>
                   </p>
                   {tier.benefits.length > 0 && (
                     <ul data-testid="tier-benefits" className="grid gap-2 text-[15px]">
@@ -97,19 +102,17 @@ export default async function SupportPage({ params }: { params: Promise<{ audien
                           : "inline-flex rounded-full border-[1.5px] border-[#2e2470] font-bold text-paper",
                       )}
                     >
-                      Unirme como {tier.name}
+                      {t.join(tier.name)}
                     </a>
                   ) : (
-                    <p className="mt-auto text-sm text-[#aaa4d8]">Muy pronto</p>
+                    <p className="mt-auto text-sm text-[#aaa4d8]">{t.soon}</p>
                   )}
                 </li>
               );
             })}
           </ul>
         )}
-        <p className="mt-4 text-[13px] text-[#aaa4d8]">
-          Cada botón lleva al nivel correspondiente de la plataforma.
-        </p>
+        <p className="mt-4 text-[13px] text-[#aaa4d8]">{t.note}</p>
       </div>
     </section>
   );
