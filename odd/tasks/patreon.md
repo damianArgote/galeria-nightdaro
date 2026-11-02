@@ -29,7 +29,7 @@ Assumptions (not asked by the user, marked as such):
 | T2  | S2, S3    | inline        | done    | 6b051f8: 238 unit + 5 e2e (patreon.spec) green; verifier PASS, 4 advisories fixed                                        |
 | T3  | S4, S5    | inline        | done    | 319df64: 256 unit + 42 e2e green (patreon.spec: signed pledge once, 401/400); verifier PASS, advisories fixed in 9223b26 |
 | T4  | S6        | inline        | done    | 7a5ff70: 266 unit + 43 e2e green (patreon.spec: Resumen shows alta, active, income)                                      |
-| T5  | S7        | inline        | pending |                                                                                                                          |
+| T5  | S7        | inline        | done    | e55636d: 311 unit + 56 e2e green (artwork-patreon.spec)                                                                  |
 | T6  | S8        | inline        | pending |                                                                                                                          |
 | T7  | Done when | user + inline | pending | Patreon client registered, Render env vars, real connection                                                              |
 
@@ -50,4 +50,5 @@ Route evidence: no Writer trigger — the units depend on each other (T3 needs T
 - **L11** (2026-11-01): T4 done in 7a5ff70 (PR 3). Altas and bajas count events in the range (Buenos Aires days); active patrons and income are today's state (declined patrons excluded); per Patreon tier: clicks of our linked tier, altas, active. No independent verifier: read-only queries, no high-risk item.
 - **L12** (2026-11-01, user): "porque hay 3 planes de tier yo creo que pedi solo 2? de 5 y 10 uds el otro lo veo muy caro" → production still has the seed's example tiers; the user edits them in /admin/links (no code change).
 - **L13** (2026-11-01): #32 was merged into `feat/beneficios` (its stale base) and #33 into `feat/patreon`, so neither reached main. Fixed by opening #35 (`feat/patreon` → main, holds PRs 1 and 2) and retargeting #34 to main. From now on every PR targets `main` directly once its predecessor is merged.
-- Next: T5.
+- **L14** (2026-11-02): T5 done in e55636d. artworks.patreon_post_url (migration 0007, additive; only https patreon.com links; an edit that omits it keeps it). /r/obra/{id} records a click with the artwork (30 s dedup per session, crawlers not counted) and redirects to the post; 404 for drafts, artworks without post and bad ids. The button is a plain <a> so a prefetch never counts. The Resumen lists "Obras que más llevan a Patreon" (clicks, views, conversion); artwork clicks also count in the total clicks.
+- Next: T6.
