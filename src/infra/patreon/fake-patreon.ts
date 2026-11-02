@@ -97,6 +97,11 @@ export class FakePatreonPort implements PatreonPort {
     return [...this.webhooks].map(([id, { uri }]) => ({ id, uri }));
   }
 
+  async listPosts(accessToken: string, campaignId: string): Promise<PatreonPost[]> {
+    this.calls.push(`posts:${accessToken}:${campaignId}`);
+    return [...this.posts.values()].map((p) => ({ ...structuredClone(p), content: null }));
+  }
+
   async getPost(accessToken: string, postId: string): Promise<PatreonPost | null> {
     this.calls.push(`post:${accessToken}:${postId}`);
     const post = this.posts.get(postId);

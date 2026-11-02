@@ -22,6 +22,8 @@ export interface PatreonPort {
   /** Current state of one member; null when Patreon no longer has it. */
   getMember(accessToken: string, memberId: string): Promise<PatreonMember | null>;
   listWebhooks(accessToken: string): Promise<{ id: string; uri: string }[]>;
+  /** Every post of the campaign (title, link, date; no content), all pages. */
+  listPosts(accessToken: string, campaignId: string): Promise<PatreonPost[]>;
   /** Null when the post does not exist or is not readable. */
   getPost(accessToken: string, postId: string): Promise<PatreonPost | null>;
   /** Downloads an image of a post; only *.patreonusercontent.com, size-capped. Null on failure. */

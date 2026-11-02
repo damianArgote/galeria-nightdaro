@@ -120,6 +120,29 @@ const postSchema = z.object({
 });
 const MAX_POST_IMAGE_BYTES = 30 * 1024 * 1024;
 
+const postsPageSchema = z.object({
+  data: z.array(postSchema.shape.data),
+  meta: z
+    .object({
+      pagination: z
+        .object({ cursors: z.object({ next: z.string().nullish() }).optional() })
+        .optional(),
+    })
+    .optional(),
+});
+
+function toPost(data: z.infer<typeof postSchema>["data"]): PatreonPost {
+  const { attributes } = data;
+  const published = attributes.published_at ? new Date(attributes.published_at) : null;
+  return {
+    id: data.id,
+    title: attributes.title ?? null,
+    url: attributes.url ? new URL(attributes.url, SITE).href : null,
+    publishedAt: published && !Number.isNaN(published.getTime()) ? published : null,
+    content: attributes.content ?? null,
+  };
+}
+
 const webhookSchema = z.object({
   data: z.object({ id: z.string(), attributes: z.object({ secret: z.string().min(1) }) }),
 });
@@ -225,15 +248,22 @@ export class HttpPatreonAdapter implements PatreonPort {
       if (error instanceof PatreonApiError && error.status === 404) return null;
       throw error;
     }
-    const { attributes } = body.data;
-    const published = attributes.published_at ? new Date(attributes.published_at) : null;
-    return {
-      id: body.data.id,
-      title: attributes.title ?? null,
-      url: attributes.url ? new URL(attributes.url, SITE).href : null,
-      publishedAt: published && !Number.isNaN(published.getTime()) ? published : null,
-      content: attributes.content ?? null,
-    };
+    return toPost(body.data);
+  }
+
+  async listPosts(accessToken: string, campaignId: string): Promise<PatreonPost[]> {
+    const posts: PatreonPost[] = [];
+    let cursor: string | null | undefined;
+    do {
+      const url = new URL(`${API}/campaigns/${encodeURIComponent(campaignId)}/posts`);
+      // No content here: it is only read for the drafts actually created.
+      url.searchParams.set("fields[post]", "title,url,published_at");
+      if (cursor) url.searchParams.set("page[cursor]", cursor);
+      const body = postsPageSchema.parse(await this.request(url, { accessToken }));
+      posts.push(...body.data.map(toPost));
+      cursor = body.meta?.pagination?.cursors?.next;
+    } while (cursor);
+    return posts;
   }
 
   async downloadPostImage(url: string): Promise<Uint8Array | null> {

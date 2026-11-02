@@ -70,6 +70,13 @@ export function PatreonPanel({
             </a>{" "}
             <span className="text-muted-foreground">desde el {date(status.connectedAt)}</span>
           </p>
+          <a
+            href="/admin/patreon"
+            data-tour="links-patreon-sync"
+            className="gallery-cta inline-flex px-4 py-2 text-sm"
+          >
+            Sincronizar con Patreon
+          </a>
           <form action={disconnectPatreonAction}>
             <Button type="submit" size="sm" variant="destructive">
               Desconectar

@@ -43,6 +43,14 @@ test.describe("Patreon connection", () => {
     ).toBeVisible();
   });
 
+  test("the sync page asks to connect Patreon first", async ({ page }) => {
+    await page.goto("/admin/patreon");
+    await expect(
+      page.getByRole("heading", { name: "Sincronizar con Patreon", level: 2 }),
+    ).toBeVisible();
+    await expect(page.getByText("Primero conectá Patreon en")).toBeVisible();
+  });
+
   test("a cancelled consent comes back as cancelled", async ({ page }) => {
     await page.goto("/api/patreon/callback?error=access_denied&state=x");
     await expect(page).toHaveURL(/\/admin\/links\?patreon=cancelado$/);
