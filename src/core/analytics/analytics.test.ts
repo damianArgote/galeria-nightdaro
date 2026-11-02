@@ -12,7 +12,7 @@ import { CreateTrackingLink } from "../links/create-tracking-link";
 import { GetAnalyticsSummary } from "./get-analytics-summary";
 import { RecordArtworkClick, RecordClick, RecordClientEvent, referrerHost } from "./record-event";
 
-const visitor = { sessionHash: "a".repeat(32), country: "AR" };
+const visitor = { sessionHash: "a".repeat(32), country: "AR", locale: "es" as const };
 
 let events: FakeEventRepository;
 let artworks: FakeArtworkRepository;
@@ -56,6 +56,7 @@ describe("RecordClientEvent", () => {
         sessionHash: visitor.sessionHash,
         referrer: "x.com",
         country: "AR",
+        locale: "es",
       },
       {
         type: "view",
@@ -64,6 +65,7 @@ describe("RecordClientEvent", () => {
         sessionHash: visitor.sessionHash,
         referrer: null,
         country: "AR",
+        locale: "es",
       },
       {
         type: "view",
@@ -72,6 +74,7 @@ describe("RecordClientEvent", () => {
         sessionHash: visitor.sessionHash,
         referrer: null,
         country: "AR",
+        locale: "es",
       },
       {
         type: "age_ok",
@@ -80,6 +83,7 @@ describe("RecordClientEvent", () => {
         sessionHash: visitor.sessionHash,
         referrer: null,
         country: null,
+        locale: "es",
       },
     ]);
   });
@@ -128,6 +132,7 @@ describe("RecordClick", () => {
         sessionHash: visitor.sessionHash,
         referrer: "nightdaro.com",
         country: "AR",
+        locale: "es",
       },
     ]);
   });
@@ -178,6 +183,23 @@ describe("GetAnalyticsSummary", () => {
       { day: "2026-10-31", visits: 0, clicks: 0 },
     ]);
     expect(summary).toMatchObject({ ageGateRate: 0.75, conversion: 0.25 });
+  });
+
+  it("lists visits in English and in Spanish, zeros included", async () => {
+    events.counts = {
+      ...events.counts,
+      visitsByLocale: [{ locale: "es", visits: 3, uniqueVisitors: 2 }],
+    };
+
+    const summary = await new GetAnalyticsSummary(events).execute({
+      from: "2026-10-29",
+      to: "2026-10-31",
+    });
+
+    expect(summary.visitsByLocale).toEqual([
+      { locale: "en", visits: 0, uniqueVisitors: 0 },
+      { locale: "es", visits: 3, uniqueVisitors: 2 },
+    ]);
   });
 
   it("reports zero rates without visitors and rejects invalid ranges", async () => {
@@ -232,6 +254,7 @@ describe("RecordArtworkClick", () => {
         sessionHash: visitor.sessionHash,
         referrer: "www.nightdaro.com",
         country: "AR",
+        locale: "es",
       },
     ]);
   });

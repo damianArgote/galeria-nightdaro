@@ -1,3 +1,5 @@
+import type { Locale } from "../gallery/locale";
+
 /** Inclusive day range, YYYY-MM-DD in the analytics time zone. */
 export interface DateRange {
   from: string;
@@ -17,6 +19,8 @@ export interface SummaryCounts {
   /** Tracking links without a tier (social bios, campaigns…). */
   clicksByLink: { linkId: string; label: string; clicks: number }[];
   daily: { day: string; visits: number; clicks: number }[];
+  /** Page views and unique visitors per gallery language (events without one are left out). */
+  visitsByLocale: { locale: Locale; visits: number; uniqueVisitors: number }[];
   topArtworks: { artworkId: string; title: string; slug: string; views: number }[];
   /** Artworks whose "Ver completa en Patreon" was clicked, most clicked first, with their views. */
   artworkClicks: {

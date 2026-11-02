@@ -14,6 +14,7 @@ export class FakeEventRepository implements EventRepository {
     clicksByTier: [],
     clicksByLink: [],
     daily: [],
+    visitsByLocale: [],
     topArtworks: [],
     artworkClicks: [],
   };

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { LOCALES } from "../gallery/locale";
 import type { AnalyticsSummary, DateRange } from "./analytics-summary";
 import type { EventRepository } from "./ports";
 
@@ -37,9 +38,20 @@ export class GetAnalyticsSummary {
     const byDay = new Map(counts.daily.map((d) => [d.day, d]));
     const daily = eachDay(range).map((d) => byDay.get(d) ?? { day: d, visits: 0, clicks: 0 });
 
+    // Both languages, in a fixed order, even when one has no visits.
+    const visitsByLocale = LOCALES.map(
+      (locale) =>
+        counts.visitsByLocale.find((v) => v.locale === locale) ?? {
+          locale,
+          visits: 0,
+          uniqueVisitors: 0,
+        },
+    );
+
     return {
       ...counts,
       daily,
+      visitsByLocale,
       range,
       ageGateRate: rate(counts.ageGateSessions, counts.uniqueVisitors),
       conversion: rate(counts.clickingSessions, counts.uniqueVisitors),

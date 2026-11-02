@@ -28,15 +28,15 @@ test.describe("metrics", () => {
       route.fulfill({ body: "<title>Patreon</title>", contentType: "text/html" }),
     );
     await visitor.goto("/");
-    await visitor.getByRole("button", { name: "Tengo 18 o más, entrar" }).click();
+    await visitor.getByRole("button", { name: "I am 18 or older, enter" }).click();
     await visitor
       .getByTestId("gallery-card")
       .filter({ hasText: "Calabaza Pin-up" })
       .getByRole("button")
       .click();
-    await visitor.getByRole("link", { name: "Ver completa en Patreon" }).click();
+    await visitor.getByRole("link", { name: "See it in full on Patreon" }).click();
     await expect(visitor).toHaveURL(/\/apoyar$/);
-    await visitor.getByRole("link", { name: "Unirme como Tier 3" }).click();
+    await visitor.getByRole("link", { name: "Join as Tier 3" }).click();
     await expect(visitor).toHaveURL("https://www.patreon.com/cw/Ndaro");
     await visitor.close();
 
@@ -45,6 +45,41 @@ test.describe("metrics", () => {
     expect(await stat(admin, "Visitas")).toBeGreaterThanOrEqual(visitsBefore + 2);
     await expect(admin.getByTestId("top-artworks")).toContainText("Calabaza Pin-up");
     await expect(admin.getByTestId("chart-visits")).toBeVisible();
+    await admin.close();
+  });
+
+  test("the Resumen counts visits in English and in Spanish", async ({ browser }) => {
+    const admin = await browser.newPage({ storageState: ADMIN_STATE });
+    const visits = async (language: string) => {
+      await admin.goto("/admin?desde=2020-01-01&hasta=2099-12-31");
+      const row = admin
+        .getByTestId("visits-by-locale")
+        .getByRole("listitem")
+        .filter({ hasText: language });
+      return (await row.count()) === 0 ? 0 : Number(await row.locator("b").innerText());
+    };
+    const spanishBefore = await visits("Español");
+    const englishBefore = await visits("Inglés");
+
+    const visitor = await browser.newPage();
+    await visitor.goto("/");
+    await expect(
+      visitor.getByRole("heading", { name: "Fresh off the drawing board" }),
+    ).toBeVisible();
+    await expect.poll(() => visits("Inglés")).toBeGreaterThan(englishBefore);
+    await visitor
+      .getByRole("dialog")
+      .getByTestId("language-switcher")
+      .getByRole("button", { name: "Español" })
+      .click();
+    await expect(visitor.getByRole("dialog", { name: /Contenido para adultos/ })).toBeVisible();
+    await visitor.goto("/en-proceso");
+    await expect(
+      visitor.getByRole("heading", { name: "Lo último de la mesa de dibujo" }),
+    ).toBeVisible();
+    await visitor.close();
+
+    await expect.poll(() => visits("Español")).toBeGreaterThan(spanishBefore);
     await admin.close();
   });
 

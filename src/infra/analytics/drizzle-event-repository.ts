@@ -2,6 +2,7 @@ import { and, eq, gte, sql } from "drizzle-orm";
 import type { AnalyticsEvent } from "@/core/analytics/analytics-event";
 import type { DateRange, SummaryCounts } from "@/core/analytics/analytics-summary";
 import type { EventRepository } from "@/core/analytics/ports";
+import { isLocale } from "@/core/gallery/locale";
 import type { Db } from "@/db/client";
 import { events } from "@/db/schema";
 
@@ -72,6 +73,14 @@ export class DrizzleEventRepository implements EventRepository {
         count(*) filter (where e.type = 'click') as clicks
       from events e where ${inRange} group by 1 order by 1`);
 
+    const byLocale = await this.db.execute<Record<string, unknown>>(sql`
+      select e.locale,
+        count(*) as visits,
+        count(distinct e.session_hash) as unique_visitors
+      from events e
+      where e.type = 'view' and e.artwork_id is null and e.locale is not null and ${inRange}
+      group by e.locale`);
+
     const top = await this.db.execute<Record<string, unknown>>(sql`
       select a.id, a.title, a.slug, count(*) as views
       from events e join artworks a on a.id = e.artwork_id
@@ -106,6 +115,12 @@ export class DrizzleEventRepository implements EventRepository {
         clicks: n(r.clicks),
       })),
       daily: daily.map((r) => ({ day: String(r.day), visits: n(r.visits), clicks: n(r.clicks) })),
+      visitsByLocale: byLocale.flatMap((r) => {
+        const locale = String(r.locale);
+        return isLocale(locale)
+          ? [{ locale, visits: n(r.visits), uniqueVisitors: n(r.unique_visitors) }]
+          : [];
+      }),
       artworkClicks: byArtwork.map((r) => ({
         artworkId: String(r.id),
         title: String(r.title),

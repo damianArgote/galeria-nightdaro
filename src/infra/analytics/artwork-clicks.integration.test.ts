@@ -8,7 +8,11 @@ import { DrizzleArtworkRepository } from "@/infra/artworks/drizzle-artwork-repos
 import { createTestDb, databaseUrl } from "../../../tests/helpers/test-db";
 import { DrizzleEventRepository } from "./drizzle-event-repository";
 
-const visitor = (n: number) => ({ sessionHash: String(n).repeat(32), country: "AR" });
+const visitor = (n: number) => ({
+  sessionHash: String(n).repeat(32),
+  country: "AR",
+  locale: "en" as const,
+});
 
 describe.skipIf(!databaseUrl)("artworks that lead to Patreon, against Postgres", () => {
   let testDb: Awaited<ReturnType<typeof createTestDb>>;

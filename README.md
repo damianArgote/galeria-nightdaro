@@ -134,9 +134,11 @@ Prueba en vivo contra la librería configurada (sube un video de 3 s, espera el 
 
 El diseño sigue los mockups de la galería y del panel. Lo que todavía falta, porque necesita datos nuevos o pantallas nuevas, está en [docs/deuda-tecnica.md](docs/deuda-tecnica.md) como los Pasos 13 a 22. El banner del hero es `public/banner.jpg` (el del mockup, 1600 × 685); si se borra, el hero muestra el nombre del sitio.
 
-`/`, `/en-proceso`, `/timelapses`, `/obra/[slug]` y `/apoyar` son Server Components con ISR (`revalidate = 300`), y cada cambio del panel las revalida. Cada página tiene dos variantes estáticas: `/g/sfw/…` y `/g/adult/…`. `src/middleware.ts` elige cuál servir según la cookie `age_ok` (los crawlers reciben siempre `sfw`) y reescribe la URL; `/g/*` no se puede pedir directo.
+`/`, `/en-proceso`, `/timelapses`, `/obra/[slug]` y `/apoyar` son Server Components con ISR (`revalidate = 300`), y cada cambio del panel las revalida. Cada página tiene cuatro variantes estáticas: `/g/{en|es}/{sfw|adult}/…`. Los rewrites de `next.config.ts` (`src/app/g/routing.ts`) eligen cuál servir según las cookies `age_ok` y `lang` (los crawlers reciben siempre `en` y `sfw`); `/g/*` no se puede pedir directo.
 
-- **Puerta +18:** sin la cookie, la consulta solo trae obras `sfw` y se muestra el modal. "Tengo 18 o más, entrar" guarda `age_ok` por 1 año; "Salir" saca del sitio. Si se desactiva en `/admin/pagina`, nadie ve contenido +18.
+- **Idioma:** la galería pública está en inglés por defecto. El selector EN/ES del header guarda la cookie `lang` por 1 año. Los textos están en `src/components/gallery/i18n.ts`; el panel sigue en español. Los títulos, descripciones y la bio que se cargan en el panel se muestran tal cual, sin traducir.
+
+- **Puerta +18:** sin la cookie, la consulta solo trae obras `sfw` y se muestra el modal. "Tengo 18 o más, entrar" ("I am 18 or older, enter" en inglés) guarda `age_ok` por 1 año; "Salir" ("Leave") saca del sitio. Si se desactiva en `/admin/pagina`, nadie ve contenido +18.
 - **Imágenes:** el HTML cacheado usa URLs estables (`/media/{id}/thumb|preview|player`). Esa ruta firma una URL de 1 hora en cada pedido y vuelve a chequear la cookie, así que los archivos +18 también necesitan la puerta.
 - **Tiers:** enlazan a `/r/{código}`, nunca directo. Cada tier nuevo crea su link de seguimiento.
 - **Metadatos:** `rating=adult` y la etiqueta RTA. El Open Graph de cada obra lleva imagen solo si es `sfw`.
@@ -149,8 +151,8 @@ Variables opcionales: `SITE_URL` (base de las URLs absolutas del Open Graph y de
 - **Vistas y puerta +18:** la galería registra en el navegador las vistas de página, las vistas de obra (lightbox o ficha) y la aceptación de la puerta +18, con `POST /api/events`. Nunca se cuentan al renderizar: las páginas están cacheadas y los bots que no ejecutan JS no suman.
 - **Protecciones de `/api/events`:** ignora crawlers, rechaza otros orígenes y bodies de más de 4 KB, y tiene un rate limit de 60 eventos por minuto por IP.
 - **Clics:** `/r/{código}` registra el clic (salvo de crawlers) y redirige con 302.
-- **Sin IP:** no se guarda ninguna. Cada evento lleva un `session_hash` diario, HMAC-SHA256 de día + IP + user agent con `ANALYTICS_SALT`, que es obligatoria en producción. Además se guardan el país del CDN y solo el host del referrer, que se descarta si es una IP.
-- **Resumen (`/admin`):** visitas, visitantes únicos, aceptación de la puerta y conversión a clic. Suma visitas y clics por día (hora de Buenos Aires), clics por tier y por red, y las obras más vistas, con filtro de fechas.
+- **Sin IP:** no se guarda ninguna. Cada evento lleva un `session_hash` diario, HMAC-SHA256 de día + IP + user agent con `ANALYTICS_SALT`, que es obligatoria en producción. Además se guardan el país del CDN, el idioma de la galería (cookie `lang`) y solo el host del referrer, que se descarta si es una IP.
+- **Resumen (`/admin`):** visitas, visitantes únicos, aceptación de la puerta y conversión a clic. Suma visitas y clics por día (hora de Buenos Aires), clics por tier y por red, visitas por idioma (inglés/español) y las obras más vistas, con filtro de fechas.
 
 ## Deploy
 

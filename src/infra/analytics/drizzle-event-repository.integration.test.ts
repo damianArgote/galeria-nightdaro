@@ -18,11 +18,12 @@ import { visitorFrom } from "./visitor";
 
 const IP_A = "203.0.113.7";
 const IP_B = "198.51.100.23";
-const headersFor = (ip: string) =>
+const headersFor = (ip: string, cookie = "") =>
   new Headers({
     "x-forwarded-for": ip,
     "user-agent": "Mozilla/5.0 Chrome/130",
     "cf-ipcountry": "AR",
+    cookie,
   });
 
 describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
@@ -58,7 +59,7 @@ describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
 
     const at = (iso: string) => new Date(iso);
     const a = visitorFrom(headersFor(IP_A), at("2026-10-30T15:00:00Z"));
-    const b = visitorFrom(headersFor(IP_B), at("2026-10-30T15:00:00Z"));
+    const b = visitorFrom(headersFor(IP_B, "lang=es"), at("2026-10-30T15:00:00Z"));
     const record = new RecordClientEvent(repo, artworks);
     const click = new RecordClick(repo, links);
 
@@ -70,7 +71,7 @@ describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
     await record.execute({ type: "age_ok" }, a);
     await click.execute({ code: tierCode }, a);
     await click.execute({ code: tierCode }, a);
-    // Visitor B: one page view and a click on a social link.
+    // Visitor B, browsing in Spanish: one page view and a click on a social link.
     await record.execute({ type: "view" }, b);
     await click.execute({ code: "x-bio" }, b);
 
@@ -102,6 +103,10 @@ describe.skipIf(!databaseUrl)("analytics against Postgres", () => {
       clicksByTier: [{ name: "Tinta", platform: "patreon", clicks: 1 }],
       clicksByLink: [{ label: "Bio de X", clicks: 1 }],
       topArtworks: [{ title: "Obra vista", views: 1 }],
+      visitsByLocale: [
+        { locale: "en", visits: 2, uniqueVisitors: 1 },
+        { locale: "es", visits: 1, uniqueVisitors: 1 },
+      ],
     });
     // The 02:30 UTC click still belongs to October 30 in Buenos Aires.
     expect(summary.daily).toEqual([

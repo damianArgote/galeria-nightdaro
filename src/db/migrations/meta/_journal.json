@@ -64,6 +64,13 @@
       "when": 1793577781661,
       "tag": "0008_artwork_patreon_post_id",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793586515044,
+      "tag": "0009_event_locale",
+      "breakpoints": true
     }
   ]
 }
