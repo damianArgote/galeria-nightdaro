@@ -89,7 +89,7 @@ export const TOURS: Record<string, TourStep[]> = {
       target: "upload-file",
       title: "El archivo",
       description:
-        "Arrastralo o tocá para elegirlo. El original queda guardado en privado; la galería solo muestra una versión en baja resolución con marca de agua.",
+        "Arrastralo o tocá para elegirlo. El original queda guardado en privado; la galería solo muestra una versión en baja resolución con marca de agua. En un timelapse podés sumar una portada; si no, se usa un cuadro del video cuando Bunny termina de procesarlo.",
     },
     {
       target: "upload-rating",
@@ -124,7 +124,13 @@ export const TOURS: Record<string, TourStep[]> = {
       target: "gallery-row-actions",
       title: "Cada obra",
       description:
-        "Editá el título, la descripción o el rating; publicala, ocultala o borrala. En los timelapses también subís o cambiás la portada.",
+        "Editá el título, la descripción, el rating o el link a su post de Patreon (así «Ver completa en Patreon» lleva a ese post); publicala, ocultala o borrala. En los timelapses también subís o cambiás la portada.",
+    },
+    {
+      target: "gallery-from-patreon",
+      title: "Borradores desde Patreon",
+      description:
+        "Cuando Daro publica en Patreon, acá aparece un borrador con el título, el link al post y, si el post la trae, la imagen. Llega como explícito y desenfocado: elegí el rating, subí la versión censurada si hace falta y publicalo.",
     },
     {
       target: "gallery-new",
@@ -166,7 +172,7 @@ export const TOURS: Record<string, TourStep[]> = {
       target: "links-patreon",
       title: "Patreon",
       description:
-        "Conectá la cuenta de Daro para ver altas, bajas e ingresos en el Resumen. Es de solo lectura: no publica nada ni guarda datos de los fans.",
+        "Conectá la cuenta de Daro para ver altas, bajas e ingresos en el Resumen, y para que cada post nuevo de Patreon llegue a Galería como borrador. No publica nada en Patreon ni guarda datos de los fans.",
     },
     {
       target: "links-tiers",

@@ -2,11 +2,12 @@ import { z } from "zod";
 import type {
   PatreonCampaign,
   PatreonMember,
+  PatreonPost,
   PatreonTokens,
   PatreonTrigger,
   PatreonWebhook,
 } from "@/core/patreon/patreon";
-import { PATRON_STATUSES } from "@/core/patreon/patreon";
+import { isPatreonImageUrl, PATRON_STATUSES } from "@/core/patreon/patreon";
 import type { PatreonPort } from "@/core/patreon/ports";
 import { systemClock, type Clock } from "@/core/shared/clock";
 
@@ -106,6 +107,19 @@ const membersSchema = z.object({
     .optional(),
 });
 
+const postSchema = z.object({
+  data: z.object({
+    id: z.string().min(1).max(100),
+    attributes: z.object({
+      title: z.string().nullish(),
+      url: z.string().nullish(),
+      published_at: z.string().nullish(),
+      content: z.string().nullish(),
+    }),
+  }),
+});
+const MAX_POST_IMAGE_BYTES = 30 * 1024 * 1024;
+
 const webhookSchema = z.object({
   data: z.object({ id: z.string(), attributes: z.object({ secret: z.string().min(1) }) }),
 });
@@ -199,6 +213,66 @@ export class HttpPatreonAdapter implements PatreonPort {
     url.searchParams.set("fields[webhook]", "uri");
     const body = webhooksSchema.parse(await this.request(url, { accessToken }));
     return body.data.map((w) => ({ id: w.id, uri: w.attributes.uri }));
+  }
+
+  async getPost(accessToken: string, postId: string): Promise<PatreonPost | null> {
+    const url = new URL(`${API}/posts/${encodeURIComponent(postId)}`);
+    url.searchParams.set("fields[post]", "title,url,published_at,content");
+    let body: z.infer<typeof postSchema>;
+    try {
+      body = postSchema.parse(await this.request(url, { accessToken }));
+    } catch (error) {
+      if (error instanceof PatreonApiError && error.status === 404) return null;
+      throw error;
+    }
+    const { attributes } = body.data;
+    const published = attributes.published_at ? new Date(attributes.published_at) : null;
+    return {
+      id: body.data.id,
+      title: attributes.title ?? null,
+      url: attributes.url ? new URL(attributes.url, SITE).href : null,
+      publishedAt: published && !Number.isNaN(published.getTime()) ? published : null,
+      content: attributes.content ?? null,
+    };
+  }
+
+  async downloadPostImage(url: string): Promise<Uint8Array | null> {
+    // Only Patreon's image CDN, no credentials, and no redirect to anywhere else.
+    if (!isPatreonImageUrl(url)) return null;
+    try {
+      const response = await this.fetchImpl(url, {
+        headers: { "User-Agent": USER_AGENT },
+        redirect: "error",
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      });
+      if (!response.ok) return null;
+      const declared = Number(response.headers.get("content-length") ?? 0);
+      if (declared > MAX_POST_IMAGE_BYTES || !response.body) return null;
+      // Read in chunks and stop at the cap: a missing or false length must not fill memory.
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_POST_IMAGE_BYTES) {
+          await reader.cancel();
+          return null;
+        }
+        chunks.push(value);
+      }
+      if (total === 0) return null;
+      const bytes = new Uint8Array(total);
+      let offset = 0;
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+      return bytes;
+    } catch {
+      return null;
+    }
   }
 
   async createWebhook(

@@ -220,6 +220,16 @@ function ArtworkRow({
             {STATUS_LABELS[artwork.status]}
           </Badge>
           <Badge variant="secondary">{RATING_LABELS[artwork.rating].label}</Badge>
+          {artwork.patreonPostId && (
+            <Badge
+              variant="outline"
+              data-tour="gallery-from-patreon"
+              className="border-brand-sky text-brand-sky"
+              title="Borrador creado al publicar en Patreon: revisá el rating y la imagen"
+            >
+              Desde Patreon
+            </Badge>
+          )}
           <span className="font-mono">/{artwork.slug}</span>
           {video && (
             <Badge

@@ -80,3 +80,33 @@ export interface PatreonEvent {
   patreonTierId: string | null;
   occurredAt: Date;
 }
+
+/** A post of the campaign, read back from the API (the webhook payload is not trusted). */
+export interface PatreonPost {
+  id: string;
+  title: string | null;
+  url: string | null;
+  publishedAt: Date | null;
+  /** HTML; may hold the post's images. */
+  content: string | null;
+}
+
+/** Only images Patreon itself hosts are ever downloaded from a post. */
+export function isPatreonImageUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && url.hostname.endsWith(".patreonusercontent.com");
+  } catch {
+    return false;
+  }
+}
+
+/** The first image of a post's HTML hosted by Patreon, if any. */
+export function firstPostImage(content: string | null): string | null {
+  if (!content) return null;
+  for (const match of content.matchAll(/<img\b[^>]*\ssrc\s*=\s*["']([^"']+)["']/gi)) {
+    const src = match[1]!.replaceAll("&amp;", "&");
+    if (isPatreonImageUrl(src)) return src;
+  }
+  return null;
+}

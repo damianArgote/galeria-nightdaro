@@ -18,6 +18,7 @@ export interface ArtworkRepository {
   save(artwork: Artwork): Promise<void>;
   findById(id: string): Promise<Artwork | null>;
   findBySlug(slug: string): Promise<Artwork | null>;
+  findByPatreonPostId(postId: string): Promise<Artwork | null>;
   /** Matching artworks ordered by position ascending. */
   list(filter?: ArtworkFilter): Promise<Artwork[]>;
   /** Sets every position in one atomic operation. */

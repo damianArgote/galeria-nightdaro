@@ -23,6 +23,7 @@ function toArtwork(row: ArtworkRow): Artwork {
     tags: row.tags,
     publishedAt: row.publishedAt,
     patreonPostUrl: row.patreonPostUrl,
+    patreonPostId: row.patreonPostId,
   };
 }
 
@@ -43,6 +44,11 @@ export class DrizzleArtworkRepository implements ArtworkRepository {
 
   async findBySlug(slug: string): Promise<Artwork | null> {
     const [row] = await this.db.select().from(artworks).where(eq(artworks.slug, slug));
+    return row ? toArtwork(row) : null;
+  }
+
+  async findByPatreonPostId(postId: string): Promise<Artwork | null> {
+    const [row] = await this.db.select().from(artworks).where(eq(artworks.patreonPostId, postId));
     return row ? toArtwork(row) : null;
   }
 

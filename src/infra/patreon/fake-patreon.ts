@@ -2,6 +2,7 @@ import type {
   PatreonCampaign,
   PatreonConnection,
   PatreonEvent,
+  PatreonPost,
   PatreonTier,
   PatreonMember,
   PatreonTokens,
@@ -38,6 +39,8 @@ export class FakePatreonPort implements PatreonPort {
     ],
   };
   members: PatreonMember[] = [];
+  readonly posts = new Map<string, PatreonPost>();
+  readonly images = new Map<string, Uint8Array>();
   readonly calls: string[] = [];
   readonly webhooks = new Map<string, { uri: string; triggers: readonly PatreonTrigger[] }>();
   private counter = 0;
@@ -92,6 +95,16 @@ export class FakePatreonPort implements PatreonPort {
   async listWebhooks(accessToken: string) {
     this.calls.push(`webhook:list:${accessToken}`);
     return [...this.webhooks].map(([id, { uri }]) => ({ id, uri }));
+  }
+
+  async getPost(accessToken: string, postId: string): Promise<PatreonPost | null> {
+    this.calls.push(`post:${accessToken}:${postId}`);
+    const post = this.posts.get(postId);
+    return post ? structuredClone(post) : null;
+  }
+
+  async downloadPostImage(url: string): Promise<Uint8Array | null> {
+    return this.images.get(url) ?? null;
   }
 
   async createWebhook(

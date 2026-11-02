@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import type { PatreonMember } from "@/core/patreon/patreon";
 import { memberResourceSchema, toMember } from "./http-patreon-adapter";
@@ -19,6 +20,17 @@ export function verifyPatreonSignature(
 export function webhookKey(trigger: string, rawBody: string): string {
   return createHash("sha256").update(`${trigger}\n${rawBody}`).digest("hex");
 }
+
+/** The post a posts:publish webhook announces; only its id is used (the API is read back). */
+export function parsePostWebhook(rawBody: string): string {
+  const payload = JSON.parse(rawBody) as { data?: unknown };
+  return postRefSchema.parse(payload.data).id;
+}
+
+const postRefSchema = z.object({
+  id: z.string().regex(/^[\w-]{1,64}$/),
+  type: z.literal("post"),
+});
 
 /** The member a pledge webhook is about; anything but its state is discarded. */
 export function parsePledgeWebhook(rawBody: string): PatreonMember {

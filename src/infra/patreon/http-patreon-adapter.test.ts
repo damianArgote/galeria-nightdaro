@@ -264,6 +264,81 @@ describe("HttpPatreonAdapter", () => {
     expect(calls[0]!.url.pathname).toBe("/api/oauth2/v2/webhooks");
   });
 
+  it("reads a post with the fields a draft needs, null when it is gone", async () => {
+    const { fetch, calls } = fakeFetch([
+      {
+        body: {
+          data: {
+            id: "p-1",
+            type: "post",
+            attributes: {
+              title: "Súcubo",
+              url: "/posts/sucubo-123",
+              published_at: "2026-11-02T12:00:00.000+00:00",
+              content: "<p>hola</p>",
+            },
+          },
+        },
+      },
+      { status: 404, body: { errors: [] } },
+    ]);
+    const adapter = new HttpPatreonAdapter(config, fetch);
+
+    expect(await adapter.getPost("at", "p-1")).toEqual({
+      id: "p-1",
+      title: "Súcubo",
+      url: "https://www.patreon.com/posts/sucubo-123",
+      publishedAt: new Date("2026-11-02T12:00:00Z"),
+      content: "<p>hola</p>",
+    });
+    expect(calls[0]!.url.pathname).toBe("/api/oauth2/v2/posts/p-1");
+    expect(calls[0]!.url.searchParams.get("fields[post]")).toBe("title,url,published_at,content");
+    expect(await adapter.getPost("at", "gone")).toBeNull();
+  });
+
+  it("downloads post images only from Patreon's image host, without following redirects", async () => {
+    const calls: { url: string; init?: RequestInit }[] = [];
+    const fetch = (async (input: string | URL, init?: RequestInit) => {
+      calls.push({ url: String(input), init });
+      return new Response(new Uint8Array([0xff, 0xd8, 0xff]));
+    }) as unknown as typeof globalThis.fetch;
+    const adapter = new HttpPatreonAdapter(config, fetch);
+
+    await expect(
+      adapter.downloadPostImage("https://c10.patreonusercontent.com/4/a.jpg"),
+    ).resolves.toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+    expect(calls[0]!.init?.redirect).toBe("error");
+    expect(new Headers(calls[0]!.init?.headers).get("authorization")).toBeNull();
+
+    for (const url of [
+      "https://evil.example/a.jpg",
+      "http://c10.patreonusercontent.com/a.jpg",
+      "https://169.254.169.254/latest",
+    ]) {
+      await expect(adapter.downloadPostImage(url)).resolves.toBeNull();
+    }
+    expect(calls).toHaveLength(1);
+  });
+
+  it("stops reading a post image past 30 MB even when no length is declared", async () => {
+    let pulled = 0;
+    const chunk = new Uint8Array(1024 * 1024);
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled++;
+        controller.enqueue(chunk);
+      },
+    });
+    const fetch = (async () => new Response(endless)) as unknown as typeof globalThis.fetch;
+
+    await expect(
+      new HttpPatreonAdapter(config, fetch).downloadPostImage(
+        "https://c10.patreonusercontent.com/huge.jpg",
+      ),
+    ).resolves.toBeNull();
+    expect(pulled).toBeLessThan(40);
+  });
+
   it("rejects a response with an unexpected shape", async () => {
     const { fetch } = fakeFetch([{ body: { data: [] } }]);
     await expect(new HttpPatreonAdapter(config, fetch).getCampaign("at")).rejects.toThrow(

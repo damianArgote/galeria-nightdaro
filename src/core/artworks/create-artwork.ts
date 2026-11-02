@@ -15,7 +15,11 @@ export class CreateArtwork {
     private readonly newId: () => string = () => crypto.randomUUID(),
   ) {}
 
-  async execute(input: CreateArtworkInput): Promise<Artwork> {
+  /** `patreonPostId`: set only by drafts from Patreon, saved in the same write. */
+  async execute(
+    input: CreateArtworkInput,
+    origin: { patreonPostId?: string } = {},
+  ): Promise<Artwork> {
     const fields = createArtworkSchema.parse(input);
     assertRatingAllowed(fields.kind, fields.rating);
     const sameKind = await this.artworks.list({ kind: fields.kind });
@@ -23,6 +27,7 @@ export class CreateArtwork {
     const artwork: Artwork = {
       ...fields,
       patreonPostUrl: fields.patreonPostUrl ?? null,
+      patreonPostId: origin.patreonPostId ?? null,
       id: this.newId(),
       slug: await uniqueSlug(this.artworks, fields.title),
       status: "draft",

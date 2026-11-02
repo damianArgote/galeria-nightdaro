@@ -19,4 +19,6 @@ export interface Artwork {
   publishedAt: Date | null;
   /** The full version on Patreon; "Ver completa en Patreon" leads there through /r/obra/{id}. */
   patreonPostUrl: string | null;
+  /** Set on drafts created from a Patreon post: one draft per post. */
+  patreonPostId: string | null;
 }

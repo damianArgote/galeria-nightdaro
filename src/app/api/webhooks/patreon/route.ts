@@ -2,6 +2,7 @@ import { PATREON_TRIGGERS, PLEDGE_EVENT_KINDS } from "@/core/patreon/patreon";
 import { container } from "@/infra/container";
 import {
   parsePledgeWebhook,
+  parsePostWebhook,
   verifyPatreonSignature,
   webhookKey,
 } from "@/infra/patreon/patreon-webhook";
@@ -41,7 +42,17 @@ export async function POST(request: Request) {
   if (!(PATREON_TRIGGERS as readonly string[]).includes(trigger)) {
     return new Response("Unknown event", { status: 400 });
   }
-  // posts:publish becomes a gallery draft in a later step; acknowledged meanwhile.
+  if (trigger === "posts:publish") {
+    let postId: string;
+    try {
+      postId = parsePostWebhook(raw);
+    } catch {
+      return new Response("Invalid payload", { status: 400 });
+    }
+    // A failure answers 500 so Patreon retries; the draft is created once per post.
+    await patreon.draftFromPost.execute({ postId });
+    return new Response(null, { status: 204 });
+  }
   if (!PLEDGE_EVENT_KINDS[trigger]) return new Response(null, { status: 204 });
 
   let member;
