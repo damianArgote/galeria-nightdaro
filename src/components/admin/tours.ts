@@ -124,13 +124,13 @@ export const TOURS: Record<string, TourStep[]> = {
       target: "gallery-row-actions",
       title: "Cada obra",
       description:
-        "Editá el título, la descripción, el rating o el link a su post de Patreon (así «Ver completa en Patreon» lleva a ese post); publicala, ocultala o borrala. En los timelapses también subís o cambiás la portada.",
+        "Editá el título, la descripción, el rating o el link a su post de Patreon (así «Ver completa en Patreon» lleva a ese post); publicala, ocultala o borrala. Con «Subir imagen» o «Cambiar imagen» le ponés o reemplazás la imagen (en las explícitas, también la versión censurada); en los timelapses es la portada.",
     },
     {
       target: "gallery-from-patreon",
       title: "Borradores desde Patreon",
       description:
-        "Cuando Daro publica en Patreon, acá aparece un borrador con el título, el link al post y, si el post la trae, la imagen. Llega como explícito y desenfocado: elegí el rating, subí la versión censurada si hace falta y publicalo.",
+        "Cuando Daro publica en Patreon, acá aparece un borrador con el título y el link al post. Patreon no siempre manda la imagen: subila con «Subir imagen», junto con la versión censurada si es explícita, elegí el rating y recién ahí publicalo.",
     },
     {
       target: "gallery-new",
