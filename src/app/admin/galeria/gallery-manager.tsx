@@ -223,6 +223,7 @@ function ArtworkRow({
           {artwork.patreonPostId && (
             <Badge
               variant="outline"
+              data-tour="gallery-from-patreon"
               className="border-brand-sky text-brand-sky"
               title="Borrador creado al publicar en Patreon: revisá el rating y la imagen"
             >
