@@ -175,6 +175,12 @@ export const TOURS: Record<string, TourStep[]> = {
         "Conectá la cuenta de Daro para ver altas, bajas e ingresos en el Resumen, y para que cada post nuevo de Patreon llegue a Galería como borrador. No publica nada en Patreon ni guarda datos de los fans.",
     },
     {
+      target: "links-patreon-sync",
+      title: "Sincronizar con Patreon",
+      description:
+        "Para los posts que ya estaban en Patreon antes de conectar: los vinculás con sus obras o los traés como borradores, después de revisarlos.",
+    },
+    {
       target: "links-tiers",
       title: "Tiers",
       description:
@@ -185,6 +191,20 @@ export const TOURS: Record<string, TourStep[]> = {
       title: "Links de seguimiento",
       description:
         "Cada link /r/{código} cuenta los clics y redirige. Usalos en redes para saber de dónde llega la gente.",
+    },
+  ],
+  "/admin/patreon": [
+    {
+      target: "sync-suggested",
+      title: "Coinciden por título",
+      description:
+        "Posts de Patreon que parecen ser una obra que ya está en la galería. Revisá la obra elegida (podés cambiarla) y tocá «Vincular»: así «Ver completa en Patreon» lleva a ese post.",
+    },
+    {
+      target: "sync-missing",
+      title: "Sin obra en la galería",
+      description:
+        "Marcá los posts que querés traer como borrador. Llegan explícitos y desenfocados: después elegís el rating y los publicás desde Galería. Si alguno ya está con otro nombre, vinculalo a mano más abajo.",
     },
   ],
   "/admin/usuarios": [

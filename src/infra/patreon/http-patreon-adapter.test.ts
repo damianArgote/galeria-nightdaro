@@ -264,6 +264,32 @@ describe("HttpPatreonAdapter", () => {
     expect(calls[0]!.url.pathname).toBe("/api/oauth2/v2/webhooks");
   });
 
+  it("lists every post of the campaign, page by page, without their content", async () => {
+    const postOf = (id: string) => ({
+      id,
+      type: "post",
+      attributes: {
+        title: `Post ${id}`,
+        url: `/posts/${id}`,
+        published_at: "2026-10-01T00:00:00Z",
+      },
+    });
+    const { fetch, calls } = fakeFetch([
+      { body: { data: [postOf("p1")], meta: { pagination: { cursors: { next: "c2" } } } } },
+      { body: { data: [postOf("p2")], meta: { pagination: { cursors: { next: null } } } } },
+    ]);
+
+    const posts = await new HttpPatreonAdapter(config, fetch).listPosts("at", "camp-1");
+
+    expect(posts.map((p) => [p.id, p.title, p.url, p.content])).toEqual([
+      ["p1", "Post p1", "https://www.patreon.com/posts/p1", null],
+      ["p2", "Post p2", "https://www.patreon.com/posts/p2", null],
+    ]);
+    expect(calls[0]!.url.pathname).toBe("/api/oauth2/v2/campaigns/camp-1/posts");
+    expect(calls[0]!.url.searchParams.get("fields[post]")).toBe("title,url,published_at");
+    expect(calls[1]!.url.searchParams.get("page[cursor]")).toBe("c2");
+  });
+
   it("reads a post with the fields a draft needs, null when it is gone", async () => {
     const { fetch, calls } = fakeFetch([
       {
