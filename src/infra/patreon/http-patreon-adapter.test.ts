@@ -320,6 +320,25 @@ describe("HttpPatreonAdapter", () => {
     expect(calls).toHaveLength(1);
   });
 
+  it("stops reading a post image past 30 MB even when no length is declared", async () => {
+    let pulled = 0;
+    const chunk = new Uint8Array(1024 * 1024);
+    const endless = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulled++;
+        controller.enqueue(chunk);
+      },
+    });
+    const fetch = (async () => new Response(endless)) as unknown as typeof globalThis.fetch;
+
+    await expect(
+      new HttpPatreonAdapter(config, fetch).downloadPostImage(
+        "https://c10.patreonusercontent.com/huge.jpg",
+      ),
+    ).resolves.toBeNull();
+    expect(pulled).toBeLessThan(40);
+  });
+
   it("rejects a response with an unexpected shape", async () => {
     const { fetch } = fakeFetch([{ body: { data: [] } }]);
     await expect(new HttpPatreonAdapter(config, fetch).getCampaign("at")).rejects.toThrow(

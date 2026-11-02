@@ -247,9 +247,29 @@ export class HttpPatreonAdapter implements PatreonPort {
       });
       if (!response.ok) return null;
       const declared = Number(response.headers.get("content-length") ?? 0);
-      if (declared > MAX_POST_IMAGE_BYTES) return null;
-      const bytes = new Uint8Array(await response.arrayBuffer());
-      return bytes.byteLength > 0 && bytes.byteLength <= MAX_POST_IMAGE_BYTES ? bytes : null;
+      if (declared > MAX_POST_IMAGE_BYTES || !response.body) return null;
+      // Read in chunks and stop at the cap: a missing or false length must not fill memory.
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.byteLength;
+        if (total > MAX_POST_IMAGE_BYTES) {
+          await reader.cancel();
+          return null;
+        }
+        chunks.push(value);
+      }
+      if (total === 0) return null;
+      const bytes = new Uint8Array(total);
+      let offset = 0;
+      for (const chunk of chunks) {
+        bytes.set(chunk, offset);
+        offset += chunk.byteLength;
+      }
+      return bytes;
     } catch {
       return null;
     }

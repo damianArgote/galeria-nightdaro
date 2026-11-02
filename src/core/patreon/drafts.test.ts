@@ -78,6 +78,7 @@ describe("CreateDraftFromPatreonPost", () => {
       rating: "explicit",
       patreonPostUrl: "https://www.patreon.com/posts/sucubo-de-halloween-123",
       patreonPostId: "p-1",
+      description: "Publicado en Patreon el 02/11/2026.",
     });
     expect((await media.listByArtworkIds([draft!.id])).map((a) => a.type)).toEqual(["image"]);
     expect(blurred).toEqual([true]);

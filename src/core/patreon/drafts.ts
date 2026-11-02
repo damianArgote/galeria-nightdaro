@@ -37,12 +37,13 @@ export class CreateDraftFromPatreonPost {
     const post = await patreon.getPost(await access.token(), postId);
     if (!post) return;
 
-    const title =
-      post.title?.trim().slice(0, 120) ||
-      `Post de Patreon del ${dayMonthYear(post.publishedAt ?? new Date())}`;
+    const date = dayMonthYear(post.publishedAt ?? new Date());
+    const title = post.title?.trim().slice(0, 120) || `Post de Patreon del ${date}`;
     const draft = await new CreateArtwork(artworks).execute(
       {
         title,
+        // Editable: the date the post went out, as a reminder while reviewing the draft.
+        description: `Publicado en Patreon el ${date}.`,
         kind: "finished",
         rating: "explicit",
         patreonPostUrl: post.url && isPatreonUrl(post.url) ? post.url : null,
