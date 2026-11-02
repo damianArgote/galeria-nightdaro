@@ -5,6 +5,7 @@ import type {
   PatreonTier,
   PatreonConnection,
   PatreonMember,
+  PatreonPost,
   PatreonTokens,
   PatreonTrigger,
   PatreonWebhook,
@@ -21,6 +22,10 @@ export interface PatreonPort {
   /** Current state of one member; null when Patreon no longer has it. */
   getMember(accessToken: string, memberId: string): Promise<PatreonMember | null>;
   listWebhooks(accessToken: string): Promise<{ id: string; uri: string }[]>;
+  /** Null when the post does not exist or is not readable. */
+  getPost(accessToken: string, postId: string): Promise<PatreonPost | null>;
+  /** Downloads an image of a post; only *.patreonusercontent.com, size-capped. Null on failure. */
+  downloadPostImage(url: string): Promise<Uint8Array | null>;
   createWebhook(
     accessToken: string,
     input: { campaignId: string; uri: string; triggers: readonly PatreonTrigger[] },

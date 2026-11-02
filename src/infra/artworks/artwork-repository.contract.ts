@@ -17,6 +17,7 @@ export function buildArtwork(overrides: Partial<Artwork> = {}): Artwork {
     tags: [],
     publishedAt: null,
     patreonPostUrl: null,
+    patreonPostId: null,
     ...overrides,
   };
 }

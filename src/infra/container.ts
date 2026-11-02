@@ -40,6 +40,7 @@ import {
   PatreonAccess,
   StartPatreonConnect,
 } from "@/core/patreon/connect";
+import { CreateDraftFromPatreonPost } from "@/core/patreon/drafts";
 import { GetPatreonSummary } from "@/core/patreon/summary";
 import { RecordPatreonPledge, SetUpPatreonCampaign } from "@/core/patreon/sync";
 import { InvalidInputError } from "@/core/shared/errors";
@@ -138,6 +139,18 @@ function patreon() {
       access: new PatreonAccess(setup.port, connections),
       members,
       events: new DrizzlePatreonEventRepository(getDb()),
+    }),
+    draftFromPost: new CreateDraftFromPatreonPost({
+      patreon: setup.port,
+      access: new PatreonAccess(setup.port, connections),
+      artworks: artworks(),
+      images: new UploadArtworkImage({
+        artworks: artworks(),
+        media: mediaAssets(),
+        storage: createStorage(),
+        images: imageProcessor,
+        keyPrefix: STORAGE_KEY_PREFIX,
+      }),
     }),
     summary: new GetPatreonSummary(
       new DrizzlePatreonEventRepository(getDb()),

@@ -63,6 +63,8 @@ export const artworks = pgTable(
       .default(sql`'{}'::text[]`),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     patreonPostUrl: text("patreon_post_url"),
+    /** Drafts from Patreon: one per post. */
+    patreonPostId: text("patreon_post_id").unique(),
     createdAt: createdAt(),
   },
   (t) => [index("artworks_kind_status_position_idx").on(t.kind, t.status, t.position)],

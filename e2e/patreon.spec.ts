@@ -123,6 +123,8 @@ test.describe("Patreon webhook", () => {
     expect((await post(sign(body))).status()).toBe(204);
     expect((await post("0".repeat(32))).status()).toBe(401);
     expect((await post(sign(body), "members:pledge:launch")).status()).toBe(400);
+    // posts:publish with a payload that is not a post.
+    expect((await post(sign(body), "posts:publish")).status()).toBe(400);
 
     const events = await db.db.execute(
       sql`select kind, amount_cents from patreon_events where member_id = 'e2e-member'`,

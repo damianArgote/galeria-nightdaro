@@ -1,6 +1,11 @@
 import { createHash, createHmac } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { parsePledgeWebhook, verifyPatreonSignature, webhookKey } from "./patreon-webhook";
+import {
+  parsePledgeWebhook,
+  parsePostWebhook,
+  verifyPatreonSignature,
+  webhookKey,
+} from "./patreon-webhook";
 
 const secret = "webhook-secret";
 const sign = (body: string, key = secret) => createHmac("md5", key).update(body).digest("hex");
@@ -59,5 +64,19 @@ describe("webhookKey", () => {
     const expected = createHash("sha256").update(`members:pledge:create\n${body}`).digest("hex");
     expect(webhookKey("members:pledge:create", body)).toBe(expected);
     expect(webhookKey("members:pledge:delete", body)).not.toBe(expected);
+  });
+});
+
+describe("parsePostWebhook", () => {
+  it("takes only the post id", () => {
+    expect(
+      parsePostWebhook(JSON.stringify({ data: { id: "123456", type: "post", attributes: {} } })),
+    ).toBe("123456");
+    expect(() =>
+      parsePostWebhook(JSON.stringify({ data: { id: "m1", type: "member" } })),
+    ).toThrow();
+    expect(() =>
+      parsePostWebhook(JSON.stringify({ data: { id: "../../x", type: "post" } })),
+    ).toThrow();
   });
 });

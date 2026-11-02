@@ -27,6 +27,11 @@ export class FakeArtworkRepository implements ArtworkRepository {
     return item ? clone(item) : null;
   }
 
+  async findByPatreonPostId(postId: string): Promise<Artwork | null> {
+    const item = [...this.items.values()].find((artwork) => artwork.patreonPostId === postId);
+    return item ? clone(item) : null;
+  }
+
   async list(filter: ArtworkFilter = {}): Promise<Artwork[]> {
     return [...this.items.values()]
       .filter((item) => !filter.kind || item.kind === filter.kind)
