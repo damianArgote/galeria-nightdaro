@@ -18,6 +18,14 @@ export interface SummaryCounts {
   clicksByLink: { linkId: string; label: string; clicks: number }[];
   daily: { day: string; visits: number; clicks: number }[];
   topArtworks: { artworkId: string; title: string; slug: string; views: number }[];
+  /** Artworks whose "Ver completa en Patreon" was clicked, most clicked first, with their views. */
+  artworkClicks: {
+    artworkId: string;
+    title: string;
+    slug: string;
+    views: number;
+    clicks: number;
+  }[];
 }
 
 export interface AnalyticsSummary extends SummaryCounts {

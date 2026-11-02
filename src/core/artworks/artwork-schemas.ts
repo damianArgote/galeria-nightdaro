@@ -18,6 +18,30 @@ export const artworkFieldsSchema = z.object({
     .max(20)
     .default([])
     .transform((tags) => [...new Set(tags)]),
+  /** Left out keeps the current link; "" removes it. */
+  patreonPostUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .refine((value) => value === "" || isPatreonUrl(value), {
+      error: "Pegá el link del post en patreon.com",
+    })
+    .transform((value) => value || null)
+    .nullable()
+    .optional(),
 });
+
+/** An https page on patreon.com: the only place this button may send visitors. */
+export function isPatreonUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname === "patreon.com" || url.hostname === "www.patreon.com")
+    );
+  } catch {
+    return false;
+  }
+}
 
 export const artworkIdSchema = z.object({ id: z.uuid() });

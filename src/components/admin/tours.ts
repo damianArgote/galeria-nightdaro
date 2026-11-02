@@ -62,6 +62,12 @@ export const TOURS: Record<string, TourStep[]> = {
         "Altas, bajas, patrons activos e ingreso mensual estimado, al lado de los clics de cada tier.",
     },
     {
+      target: "artwork-clicks",
+      title: "Obras que llevan a Patreon",
+      description:
+        "Cuántas veces tocaron «Ver completa en Patreon» en cada obra. Para que cuente, cargá el link del post en Galería → editar.",
+    },
+    {
       target: "top-artworks",
       title: "Obras más vistas",
       description: "Las que más abren en la galería: una buena pista de qué subir.",

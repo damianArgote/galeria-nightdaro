@@ -17,6 +17,8 @@ export interface PublicArtwork {
   tags: string[];
   image: { blurData: string | null; width: number | null; height: number | null } | null;
   hasVideo: boolean;
+  /** "Ver completa en Patreon" goes to its post (/r/obra/{id}) instead of /apoyar. */
+  hasPatreonPost: boolean;
 }
 
 interface Deps {
@@ -42,6 +44,7 @@ async function toPublic(deps: Deps, artworks: Artwork[]): Promise<PublicArtwork[
       tags: a.tags,
       image: image ? { blurData: image.blurData, width: image.width, height: image.height } : null,
       hasVideo: !!videos.get(a.id)?.playerUrl,
+      hasPatreonPost: !!a.patreonPostUrl,
     };
   });
 }

@@ -281,6 +281,41 @@ export default async function SummaryPage({
         </Panel>
       )}
 
+      <Panel className="mt-6" data-tour="artwork-clicks">
+        <PanelHeader
+          title="Obras que más llevan a Patreon"
+          description="Clics en «Ver completa en Patreon» de cada obra con su post cargado, y qué parte de quienes la vieron fue a Patreon."
+        />
+        {summary.artworkClicks.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Todavía no hay clics. Cargá el post de Patreon de cada obra en Galería → editar.
+          </p>
+        ) : (
+          <table className="w-full text-left text-sm" data-testid="artwork-clicks">
+            <thead className="font-mono text-xs text-muted-foreground uppercase">
+              <tr>
+                <th className="pb-2">Obra</th>
+                <th className="pb-2 text-right">Vistas</th>
+                <th className="pb-2 text-right">Clics</th>
+                <th className="pb-2 text-right">Conversión</th>
+              </tr>
+            </thead>
+            <tbody className="tabular-nums">
+              {summary.artworkClicks.map((a) => (
+                <tr key={a.artworkId} className="border-t border-border">
+                  <td className="py-2">{a.title}</td>
+                  <td className="py-2 text-right">{number(a.views)}</td>
+                  <td className="py-2 text-right">{number(a.clicks)}</td>
+                  <td className="py-2 text-right">
+                    {a.views > 0 ? percent(Math.min(a.clicks / a.views, 1)) : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Panel>
+
       <Panel className="mt-6" data-tour="top-artworks">
         <PanelHeader
           title="Obras más vistas"

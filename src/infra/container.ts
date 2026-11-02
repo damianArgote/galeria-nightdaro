@@ -2,7 +2,7 @@
 import "server-only";
 import { sql } from "drizzle-orm";
 import { GetAnalyticsSummary } from "@/core/analytics/get-analytics-summary";
-import { RecordClick, RecordClientEvent } from "@/core/analytics/record-event";
+import { RecordArtworkClick, RecordClick, RecordClientEvent } from "@/core/analytics/record-event";
 import { CreateArtwork } from "@/core/artworks/create-artwork";
 import { DeleteArtwork } from "@/core/artworks/delete-artwork";
 import { HideArtwork } from "@/core/artworks/hide-artwork";
@@ -200,6 +200,9 @@ export const container = {
 
   get recordClientEvent() {
     return new RecordClientEvent(events(), artworks());
+  },
+  get recordArtworkClick() {
+    return new RecordArtworkClick(events(), artworks());
   },
   get recordClick() {
     return new RecordClick(events(), trackingLinks());

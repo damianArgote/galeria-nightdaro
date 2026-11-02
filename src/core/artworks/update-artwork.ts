@@ -46,7 +46,15 @@ export class UpdateArtwork {
     const ratingChanged = fields.rating !== current.rating;
     if (ratingChanged) await this.publicImage?.execute(id, fields.rating);
 
-    const updated: Artwork = { ...current, ...fields, slug, position };
+    const { patreonPostUrl, ...rest } = fields;
+    const updated: Artwork = {
+      ...current,
+      ...rest,
+      // Left out of the input: keep the current link.
+      patreonPostUrl: patreonPostUrl === undefined ? current.patreonPostUrl : patreonPostUrl,
+      slug,
+      position,
+    };
     try {
       await this.artworks.save(updated);
     } catch (error) {

@@ -34,7 +34,7 @@ test.describe("metrics", () => {
       .filter({ hasText: "Calabaza Pin-up" })
       .getByRole("button")
       .click();
-    await visitor.getByRole("link", { name: "Ver completo en Patreon" }).click();
+    await visitor.getByRole("link", { name: "Ver completa en Patreon" }).click();
     await expect(visitor).toHaveURL(/\/apoyar$/);
     await visitor.getByRole("link", { name: "Unirme como Tier 3" }).click();
     await expect(visitor).toHaveURL("https://www.patreon.com/cw/Ndaro");

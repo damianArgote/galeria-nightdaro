@@ -1,0 +1,1 @@
+ALTER TABLE "artworks" ADD COLUMN "patreon_post_url" text;

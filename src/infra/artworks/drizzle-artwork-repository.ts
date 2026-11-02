@@ -22,6 +22,7 @@ function toArtwork(row: ArtworkRow): Artwork {
     position: row.position,
     tags: row.tags,
     publishedAt: row.publishedAt,
+    patreonPostUrl: row.patreonPostUrl,
   };
 }
 

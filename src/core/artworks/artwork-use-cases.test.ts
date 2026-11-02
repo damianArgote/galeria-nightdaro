@@ -148,6 +148,51 @@ describe("UpdateArtwork", () => {
   });
 });
 
+describe("link to the Patreon post", () => {
+  const POST = "https://www.patreon.com/posts/calabaza-pin-up-123456";
+
+  it("stores an optional https link to a Patreon post, and keeps it when an edit omits it", async () => {
+    const artwork = await create.execute({
+      title: "Calabaza",
+      kind: "finished",
+      rating: "sfw",
+      patreonPostUrl: `  ${POST} `,
+    });
+    expect(artwork.patreonPostUrl).toBe(POST);
+    expect((await newArtwork("Sin post")).patreonPostUrl).toBeNull();
+
+    const edited = await new UpdateArtwork(repo).execute({
+      id: artwork.id,
+      title: "Calabaza 2",
+      kind: "finished",
+      rating: "sfw",
+    });
+    expect(edited.patreonPostUrl).toBe(POST);
+
+    const cleared = await new UpdateArtwork(repo).execute({
+      id: artwork.id,
+      title: "Calabaza 2",
+      kind: "finished",
+      rating: "sfw",
+      patreonPostUrl: "",
+    });
+    expect(cleared.patreonPostUrl).toBeNull();
+  });
+
+  it("rejects a link that is not an https Patreon page", async () => {
+    for (const patreonPostUrl of [
+      "http://www.patreon.com/posts/1",
+      "https://evil.example/posts/1",
+      "https://www.patreon.com.evil.example/posts/1",
+      "javascript:alert(1)",
+    ]) {
+      await expect(
+        create.execute({ title: "X", kind: "finished", rating: "sfw", patreonPostUrl }),
+      ).rejects.toBeInstanceOf(ZodError);
+    }
+  });
+});
+
 describe("PublishArtwork and HideArtwork", () => {
   it("publishes with the current date and keeps the first date when republished", async () => {
     const artwork = await newArtwork("Obra");

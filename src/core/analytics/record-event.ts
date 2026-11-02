@@ -79,7 +79,10 @@ export class RecordClick {
     if (!link) return null;
     const now = this.clock();
     const since = new Date(now.getTime() - CLICK_DEDUP_MS);
-    if (visitor && !(await this.events.hasClickSince(visitor.sessionHash, link.id, since))) {
+    if (
+      visitor &&
+      !(await this.events.hasClickSince(visitor.sessionHash, { linkId: link.id }, since))
+    ) {
       await this.events.record({
         occurredAt: now,
         type: "click",
@@ -91,5 +94,41 @@ export class RecordClick {
       });
     }
     return link.targetUrl;
+  }
+}
+
+/**
+ * /r/obra/{id}: "Ver completa en Patreon" from an artwork. Records which artwork sent the
+ * visitor (so the Resumen knows which artworks lead to Patreon) and returns its post, or null.
+ */
+export class RecordArtworkClick {
+  constructor(
+    private readonly events: EventRepository,
+    private readonly artworks: ArtworkRepository,
+    private readonly clock: Clock = systemClock,
+  ) {}
+
+  async execute(
+    { artworkId, referrer }: { artworkId: string; referrer?: string | null },
+    visitor: VisitorContext | null,
+  ): Promise<string | null> {
+    if (!z.uuid().safeParse(artworkId).success) return null;
+    const artwork = await this.artworks.findById(artworkId);
+    if (!artwork || artwork.status !== "published" || !artwork.patreonPostUrl) return null;
+
+    const now = this.clock();
+    const since = new Date(now.getTime() - CLICK_DEDUP_MS);
+    if (visitor && !(await this.events.hasClickSince(visitor.sessionHash, { artworkId }, since))) {
+      await this.events.record({
+        occurredAt: now,
+        type: "click",
+        artworkId,
+        linkId: null,
+        sessionHash: visitor.sessionHash,
+        referrer: referrerHost(referrer),
+        country: countryCode(visitor.country),
+      });
+    }
+    return artwork.patreonPostUrl;
   }
 }
